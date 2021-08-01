@@ -17,7 +17,7 @@ namespace Tok {
             T_MINUS = '-',
             T_EQUAL = '=',
             T_CARET = '^',
-            T_REF = '&',
+            T_AMBERSAND = '&',
             
             T_LPAR = '(',
             T_RPAR = ')',

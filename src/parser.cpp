@@ -65,14 +65,29 @@ Ast_Expression* Parser::parse_primary_expression() {
 }
 
 Ast_Expression* Parser::parse_posfix_expression() {
-    auto postfix = AST_NEW(Ast_Postfix_Expression);
-
-    switch (peek()->type) {
-        break;
-    }
-
     auto prime = static_cast<Ast_Primary_Expression*>(parse_primary_expression());
+    if (prime) {
+        auto postfix = AST_NEW(Ast_Postfix_Expression);
+        log_token(peek());
+        switch (peek()->type) {
+        case Tok::T_INC:
+        printf("POSTFIX!\n");
+            match(Tok::T_INC, __LINE__);
+            postfix->op = AST_UNARY_INC;
+            prime->expr = postfix;
+            break;
+        case Tok::T_DEC:
+            match(Tok::T_DEC, __LINE__);
+            postfix->op = AST_UNARY_DEC;
+            prime->expr = postfix;
+            break;
+        default:
+            prime->expr = nullptr;
+            AST_DELETE(postfix);
+            break;
+        }
 
+    }
     return prime;
 }
 
@@ -92,6 +107,14 @@ Ast_Expression* Parser::parse_unary_expression() {
         unary->op = AST_UNARY_NESTED;
         unary->nested_expr = parse_expression();
         match(Tok::T_RPAR, __LINE__);
+        break;
+    case Tok::T_STAR:
+        match(Tok::T_STAR, __LINE__);
+        unary->op = AST_UNARY_DEREF;
+        break;
+    case Tok::T_AMBERSAND:
+        match(Tok::T_AMBERSAND, __LINE__);
+        unary->op = AST_UNARY_REF;
         break;
     default:
         AST_DELETE(unary); 
@@ -170,9 +193,12 @@ Ast_Decleration* Parser::parse_decleration() {
     auto dec = AST_NEW(Ast_Decleration);
 
     dec->id = parse_identity();
-    match(Tok::T_COLON, __LINE__);
 
-    dec->type_info = parse_type();
+    if (peek()->type == Tok::T_COLON) {
+        match(Tok::T_COLON, __LINE__);
+        dec->type_info = parse_type();
+    }
+
 
     if (peek()->type == Tok::T_EQUAL) {
         match(Tok::T_EQUAL, __LINE__);

@@ -9,7 +9,9 @@ typedef uint64_t u64;
 typedef int64_t i64;
 
 void __code_gen() {
-int var2=3*(2+(2/2));
+i32 var2=3*(2+(2/2));
+i32 var=var2++;
+var=2;
 }
 
 int main(int argc, char *argv[]) {

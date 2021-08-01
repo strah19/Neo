@@ -101,7 +101,7 @@ struct Ast_Primary_Expression : public Ast_Expression {
         char* string_literal;
         Ast_Ident *ident;
     };
-    
+
     Ast_Expression* expr;
 };
 
@@ -109,6 +109,8 @@ enum {
     AST_UNARY_INC,
     AST_UNARY_DEC,
     AST_UNARY_NESTED,
+    AST_UNARY_DEREF,
+    AST_UNARY_REF,
     AST_UNARY_NONE,
 };
 

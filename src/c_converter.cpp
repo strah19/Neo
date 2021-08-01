@@ -41,16 +41,49 @@ void C_Converter::end() {
     fprintf(file, ";\n");
 }
 
+void C_Converter::convert_postfix_expression(Ast_Expression* expr) {
+    if (expr->type == AST_PRIMARY_EXPRESSION) {
+        auto p = static_cast<Ast_Primary_Expression*>(expr);
+        switch (p->v_type) {
+        case AST_INT_P:
+            fprintf(file, "%d", p->int_const);
+            break;
+        case AST_ID_P:
+            fprintf(file, "%s", p->ident->name);
+            break;
+        }
+
+        if (p->expr) {
+            auto postfix = static_cast<Ast_Postfix_Expression*>(p->expr);
+
+            switch (postfix->op) {
+            case AST_UNARY_INC:
+                fprintf(file, "++");
+                break;
+            case AST_UNARY_DEC:
+                fprintf(file, "--");
+                break;
+            }
+        }
+    }
+}
+
 void C_Converter::convert_unary_expression(Ast_Expression* expr) {
     auto unary = static_cast<Ast_Unary_Expression*>(expr);
 
     if (expr->type == AST_UNARY_EXPESSION) {
         switch (unary->op) {
         case AST_UNARY_INC:
-            fprintf(file, "++");
+            fprintf(file, " ++");
             break;
         case AST_UNARY_DEC:
-            fprintf(file, "--");
+            fprintf(file, " --");
+            break;
+        case AST_UNARY_DEREF:
+            fprintf(file, "*");
+            break;
+        case AST_UNARY_REF:
+            fprintf(file, "&");
             break;
         case AST_UNARY_NESTED:
             fprintf(file, "(");
@@ -64,20 +97,6 @@ void C_Converter::convert_unary_expression(Ast_Expression* expr) {
         convert_unary_expression(unary->expr);
     else
         convert_postfix_expression(expr);
-}
-
-void C_Converter::convert_postfix_expression(Ast_Expression* expr) {
-    if (expr->type == AST_PRIMARY_EXPRESSION) {
-        auto p = static_cast<Ast_Primary_Expression*>(expr);
-        switch (p->v_type) {
-        case AST_INT_P:
-            fprintf(file, "%d", p->int_const);
-            break;
-        case AST_ID_P:
-            fprintf(file, "%s", p->ident->name);
-            break;
-        }
-    }
 }
 
 void C_Converter::convert_binary_expression(Ast_Expression* expr) {
@@ -115,14 +134,15 @@ void C_Converter::convert_identifier(Ast_Ident* id) {
 void C_Converter::convert_type(Ast_Type* type) {
     switch (type->atom_type) {
     case AST_TYPE_INT:
-        fprintf(file, "int ");
+        fprintf(file, "i32 ");
         break;
     }
 }
 
 void C_Converter::convert_decleration(Ast_Decleration* decleration) {
     if (decleration->type == AST_DECLERATION) {
-        convert_type(decleration->type_info);
+        if (decleration->type_info)
+            convert_type(decleration->type_info);
         convert_identifier(decleration->id);
 
         if (decleration->expr) {

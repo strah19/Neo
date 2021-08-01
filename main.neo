@@ -1,3 +1,6 @@
 var2 : int = 3 * (2 + (2 / 2));
+var : int = var2++ ;
+var = 2;
+
 
 `
