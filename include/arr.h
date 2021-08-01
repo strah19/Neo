@@ -11,14 +11,14 @@ public:
     inline void reserve(size_t element_count){
         if (!arr) {
             count = element_count;
-            arr = new T[element_count];
+            arr = (T*) malloc(sizeof(T) * element_count);
             return;
         }
         if (element_count > count) {
             T *temp_array = arr;
             count = element_count;
             memcpy(arr, temp_array, sizeof(T) * element_count);
-            delete temp_array;
+            free(temp_array);
         }
         count = element_count;
     }

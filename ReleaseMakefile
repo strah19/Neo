@@ -2,7 +2,7 @@ NEO_SRC = $(wildcard src/*.cpp)
 
 CC = g++
 
-COMPILER_FLAGS = -Werror -Wfloat-conversion -ggdb -g 
+COMPILER_FLAGS = -Werror -Wfloat-conversion -ggdb -g -O3 -finline-functions
 
 NEO_EXEC_NAME = Neo
 

@@ -55,7 +55,7 @@ namespace Tok {
             T_INT,
             T_FLOAT,
             T_DOUBLE,
-            T_CHAR,
+            T_BYTE,
             T_BOOLEAN,
 
             T_IDENTIFIER,
@@ -80,6 +80,10 @@ struct Token {
 };
 
 const char* token_to_str(Token* token);
+
+const char* type_to_str(int type);
+
+void log_token(Token* token);
 
 struct Lexer {
     uint32_t size;

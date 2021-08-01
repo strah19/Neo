@@ -26,3 +26,14 @@ void report_warning(const char* fmt, ...) {
 
     va_end(args);
 }
+
+void report_error(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    
+    printf("\033[0;31merror: \033[0m");    
+    vprintf(fmt, args);
+    printf("\n");    
+
+    va_end(args);
+}

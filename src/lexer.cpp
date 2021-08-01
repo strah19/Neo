@@ -19,6 +19,8 @@ enum {
     MULTI_LINE_COMMENT
 };
 
+uint8_t* backtrack_symbol_position = 0;
+
 uint8_t* load_file(const char* filepath, size_t* filesize) {
     uint8_t* stream;
     FILE* file;
@@ -43,7 +45,6 @@ uint8_t* load_file(const char* filepath, size_t* filesize) {
 
 Lexer* Lexer::init(uint8_t* stream) {
     Lexer* lexer = new Lexer;
-
     lexer->stream = stream;
     lexer->tokens = (Token*) malloc(sizeof(Token) * REALLOC_TOKEN_SIZE);
     lexer->size = 0;
@@ -58,42 +59,22 @@ Lexer* Lexer::init(uint8_t* stream) {
     keywords.insert("continue", Tok::T_CONTINUE);
     keywords.insert("return", Tok::T_RETURN);
     keywords.insert("break", Tok::T_BREAK);
-    keywords.insert(":=", Tok::T_COLON_ASSIGN);
-    keywords.insert("<=", Tok::T_LTE);
-    keywords.insert(">=", Tok::T_GTE);
-    keywords.insert("!=", Tok::T_NOT_EQUAL);
-    keywords.insert("==", Tok::T_COMPARE_EQUAL);
-    keywords.insert("++", Tok::T_INC);
-    keywords.insert("--", Tok::T_DEC);
     keywords.insert("const", Tok::T_CONST);
     keywords.insert("int", Tok::T_INT);
     keywords.insert("boolean", Tok::T_BOOLEAN);
-    keywords.insert("char", Tok::T_CHAR);
+    keywords.insert("byte", Tok::T_BYTE);
     keywords.insert("double", Tok::T_DOUBLE);
     keywords.insert("float", Tok::T_FLOAT);
 
+    symbols.insert(":=", Tok::T_COLON_ASSIGN);
+    symbols.insert("<=", Tok::T_LTE);
+    symbols.insert(">=", Tok::T_GTE);
+    symbols.insert("!=", Tok::T_NOT_EQUAL);
+    symbols.insert("==", Tok::T_COMPARE_EQUAL);
+    symbols.insert("++", Tok::T_INC);
+    symbols.insert("--", Tok::T_DEC);
 
-    symbols.insert("(", Tok::T_LPAR);
-    symbols.insert(")", Tok::T_RPAR);
-    symbols.insert("{", Tok::T_LCURLY);
-    symbols.insert("}", Tok::T_RCURLY);
-    symbols.insert("[", Tok::T_LBRACKET);
-    symbols.insert("]", Tok::T_RBRACKET);
-    symbols.insert("+", Tok::T_PLUS);
-    symbols.insert("-", Tok::T_MINUS);
-    symbols.insert("/", Tok::T_SLASH);
-    symbols.insert("^", Tok::T_CARET);
-    symbols.insert("=", Tok::T_EQUAL);
-    symbols.insert("*", Tok::T_STAR);
-    symbols.insert("&", Tok::T_REF);
-    symbols.insert("%", Tok::T_PERCENT);
-    symbols.insert("#", Tok::T_POUND);
-    symbols.insert("!", Tok::T_EXCLAMATION);
-    symbols.insert("<", Tok::T_RARROW);
-    symbols.insert(">", Tok::T_LARROW);
-    symbols.insert(":", Tok::T_COLON);
-    symbols.insert(";", Tok::T_SEMI);
-
+    backtrack_symbol_position = 0;
     return lexer;
 }
 
@@ -176,17 +157,21 @@ int get_type_of_token(char character) {
         return NUMERIC;
     else if (is_identifier(character))
         return IDENTIFIER;
-    else 
-        return SYMBOL;
+
+    return (!is_special_character(character)) ? SYMBOL : 0;
 }
 
 void create_symbol(Lexer* lexer, int* type) {
-    Entry* e = symbols.look_up_by_type(lexer->current[0]);
+    Entry* e = symbols.look_up(lexer->current);
 
-    if (e) {
-        create_token(lexer, e->type);
-        reset(type, lexer);
+    if (e) 
+        create_token(lexer, e->type);   
+    else {
+        create_token(lexer, lexer->current[0]);
+        lexer->stream = backtrack_symbol_position + 1;
     }
+    
+    reset(type, lexer);
 }
 
 void single_line_comment(Lexer* lexer, int* type) {
@@ -238,7 +223,7 @@ void Lexer::run() {
                 create_numeric_token(this, Tok::T_INT_CONST, current);
                 reset(&type, this);
             }
-            else if (type == SYMBOL && get_type_of_token(*stream) != SYMBOL) {
+            else if (type == SYMBOL && get_type_of_token(*stream) != SYMBOL) {             
                 create_symbol(this, &type);
             }
 
@@ -247,8 +232,9 @@ void Lexer::run() {
                 if (current_len == 1) {
                     type = get_type_of_token(*stream);
 
-                    if (type == SYMBOL) 
-                        create_symbol(this, &type);
+                    if (type == SYMBOL) {
+                        backtrack_symbol_position = stream;
+                    }
                 }
             }
         }
@@ -263,27 +249,54 @@ void Lexer::run() {
 void Lexer::log() {
     printf("lexer: Tokenized %d lines of code in '%s'.\n", current_line, file);
 
-    for(int i = 0; i < size; i++) {
-        Token* token = &tokens[i];
-        const char* str = token_to_str(token);
-        if (str)
-            printf("token: '%s', type: %d, line: %d. pos: %d.\n", str, token->type, token->line, token->pos);
-        else
-            printf("token: '%c', type: %d, line: %d. pos: %d.\n", token->type, token->type, token->line, token->pos);
-    }
+    for(int i = 0; i < size; i++) 
+        log_token(&tokens[i]);
 }
 
 const char* token_to_str(Token* token) {
     Entry* e = keywords.look_up_by_type(token->type);
-    if (e) {
+    if (e) 
         return e->name;
-    }
+
+    e = symbols.look_up_by_type(token->type);
+    if (e) 
+        return e->name;
 
     switch(token->type) {
         case Tok::T_IDENTIFIER: return token->identifier;
         case Tok::T_INT_CONST:  return std::to_string(token->int_const).c_str();
+        case Tok::T_EOF:        return "End of file";
         default: break;
     }
 
-    return nullptr;
+    static char single_char_token[2] = { '\0' };
+    single_char_token[0] = token->type;
+
+    return single_char_token;
+}
+
+const char* type_to_str(int type) {
+    Entry* e = keywords.look_up_by_type(type);
+    if (e) 
+        return e->name;
+
+    e = symbols.look_up_by_type(type);
+    if (e) 
+        return e->name;
+
+    switch(type) {
+        case Tok::T_IDENTIFIER: return "Identifier";
+        case Tok::T_INT_CONST:  return "Int Const";
+        case Tok::T_EOF:        return "End of file";
+        default: break;
+    }
+
+    static char single_char_token[2] = { '\0' };
+    single_char_token[0] = type;
+
+    return single_char_token;
+}
+
+void log_token(Token* token) {
+    printf("token: '%s', type: %d, line: %d. pos: %d.\n", token_to_str(token), token->type, token->line, token->pos);
 }
