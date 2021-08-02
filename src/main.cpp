@@ -31,9 +31,6 @@ int main(int argc, char* argv[]) {
     begin_debug_benchmark();
     lexer->run();
     end_debug_benchmark("lexer");
-    printf("Tokenized %d token!\n", lexer->size);
-
-    lexer->log();
 
     Parser* parser = Parser::init(lexer);
     
@@ -41,9 +38,12 @@ int main(int argc, char* argv[]) {
     parser->run();
     end_debug_benchmark("parser");
 
-    convert_transition_unit(argv[2], parser->root);
-
     delete lexer;
+
+    if (parser->error_count == 0)
+        convert_transition_unit(argv[2], parser->root);
+    else 
+        fatal_error("compilation ended with %d error%s.\n", parser->error_count, (parser->error_count == 1) ? "" : "s");
 
     free_translation_unit(parser->root);
     delete parser;

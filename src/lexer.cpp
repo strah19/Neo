@@ -162,15 +162,21 @@ int get_type_of_token(char character) {
 }
 
 void create_symbol(Lexer* lexer, int* type) {
-    Entry* e = symbols.look_up(lexer->current);
+    for (int i = lexer->current_len - 1; i >= 0; i--) {
+        lexer->current[i + 1] = '\0';
 
-    if (e) 
-        create_token(lexer, e->type);   
-    else {
-        create_token(lexer, lexer->current[0]);
-        lexer->stream = backtrack_symbol_position + 1;
+        Entry* e = symbols.look_up(lexer->current);
+
+        if (e) {
+            create_token(lexer, e->type);   
+            reset(type, lexer);
+            lexer->stream = backtrack_symbol_position + i + 1;
+            return;
+        }
     }
-    
+
+    create_token(lexer, lexer->current[0]);
+    lexer->stream = backtrack_symbol_position + 1;
     reset(type, lexer);
 }
 

@@ -157,6 +157,8 @@ struct Parser {
     Ast_Expression* parse_unary_expression();
     Ast_Expression* parse_posfix_expression();
     Ast_Expression* parse_primary_expression();
+
+    int error_count = 0;
 };
 
 void free_translation_unit(Ast_Translation_Unit* root);

@@ -68,10 +68,8 @@ Ast_Expression* Parser::parse_posfix_expression() {
     auto prime = static_cast<Ast_Primary_Expression*>(parse_primary_expression());
     if (prime) {
         auto postfix = AST_NEW(Ast_Postfix_Expression);
-        log_token(peek());
         switch (peek()->type) {
         case Tok::T_INC:
-        printf("POSTFIX!\n");
             match(Tok::T_INC, __LINE__);
             postfix->op = AST_UNARY_INC;
             prime->expr = postfix;
@@ -201,6 +199,8 @@ Ast_Decleration* Parser::parse_decleration() {
 
 
     if (peek()->type == Tok::T_EQUAL) {
+        if (!dec->type_info)
+            dec->type = AST_STATEMENT;
         match(Tok::T_EQUAL, __LINE__);
         dec->expr = parse_expression();
     }
@@ -230,8 +230,20 @@ void Parser::run() {
         root->scope.statements.push(dec);
 
         Entry* e = root->scope.table.look_up(dec->id->name);
-        if (!e)
-            root->scope.table.insert(dec->id->name, Tok::T_IDENTIFIER);
+
+        if (e && dec->type == AST_DECLERATION)  {
+            report_error("redecleration of identifier '%s' on line %d.\n", dec->id->name, dec->id->line);
+            error_count++;
+        }
+
+        if (!e) {
+            if (dec->type != AST_DECLERATION) {
+                report_error("undeclared identifier '%s' on line %d.\n", dec->id->name, dec->id->line);
+                error_count++;
+            }
+            else 
+                root->scope.table.insert(dec->id->name, Tok::T_IDENTIFIER);
+        }
     }
 }
 
