@@ -13,13 +13,11 @@ const char* C_preamble_buffer =
 "typedef float f32;\n"
 "typedef double f64;\n"
 "typedef uint64_t u64;\n"
-"typedef int64_t i64;\n\n"
-"void __code_gen() {\n";
+"typedef int64_t i64;\n\n";
 
 const char* C_postamble_buffer = 
-"}\n\n"
+"\n"
 "int main(int argc, char *argv[]) {\n"
-"\t__code_gen();\n"
 "\treturn 0;\n}";
 
 FILE* open_c_file(const char* file_name, char* buf) {    
@@ -139,6 +137,23 @@ void C_Converter::convert_type(Ast_Type* type) {
     }
 }
 
+void C_Converter::convert_function_definition(Ast_Function_Definition* func) {
+    if (!func->type_info)
+        fprintf(file, "void ");
+    
+    convert_identifier(func->id);
+
+    fprintf(file, "(");
+    fprintf(file, ") ");
+    fprintf(file, "{\n");
+
+    for(int i = 0; i < func->scope.statements.top(); i++) {
+        convert_decleration(static_cast<Ast_Decleration*>(func->scope.statements.get_arr()[i]));
+    }
+
+    fprintf(file, "}\n");
+}
+
 void C_Converter::convert_decleration(Ast_Decleration* decleration) {
     if (decleration->type == AST_DECLERATION) {
         if (decleration->type_info)
@@ -150,6 +165,9 @@ void C_Converter::convert_decleration(Ast_Decleration* decleration) {
             convert_expression(decleration->expr);
         }
         end();
+    }
+    else if (decleration->type == AST_FUNCTION_DEFINITION) {
+        convert_function_definition(static_cast<Ast_Function_Definition*>(decleration));
     }
 }
 

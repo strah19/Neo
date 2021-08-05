@@ -32,6 +32,8 @@ int main(int argc, char* argv[]) {
     lexer->run();
     end_debug_benchmark("lexer");
 
+    lexer->log();
+
     Parser* parser = Parser::init(lexer);
     
     begin_debug_benchmark();
@@ -40,10 +42,12 @@ int main(int argc, char* argv[]) {
 
     delete lexer;
 
+    begin_debug_benchmark();
     if (parser->error_count == 0)
         convert_transition_unit(argv[2], parser->root);
     else 
         fatal_error("compilation ended with %d error%s.\n", parser->error_count, (parser->error_count == 1) ? "" : "s");
+    end_debug_benchmark("backend");
 
     free_translation_unit(parser->root);
     delete parser;

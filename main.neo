@@ -1,6 +1,6 @@
-var2 : int = 3 * (2 + (2 / 2));
-var : int = var2++;
-var = 2;
 
-test : int = 7 + 8 * 2 / 3;
-`
+add : () {
+    a : int = 2;
+}
+
+` 

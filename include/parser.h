@@ -10,10 +10,13 @@ enum {
     AST_BINARY_EXPRESSION,
     AST_PRIMARY_EXPRESSION,
     AST_UNARY_EXPESSION,
+    AST_FUNCTION_DEFINITION,
+    AST_FUNCTION_CALL,
     AST_STATEMENT,
     AST_IDENTIFIER,
     AST_DECLERATION,
-    AST_TYPE
+    AST_TYPE,
+    AST_SCOPE
 };
 
 struct Ast {
@@ -23,15 +26,18 @@ struct Ast {
 };
 
 struct Ast_Expression;
-struct Ast_Statement;
 struct Ast_Ident;
 struct Ast_Decleration;
 struct Ast_Function_Definition;
 
 struct Ast_Scope : public Ast {
+    Ast_Scope() { type = AST_SCOPE; }
+    
     SymTable table;
-    Array<Ast_Statement*> statements;
+    Array<Ast*> statements;
     Ast_Scope* parent;
+
+    Ast_Decleration* get_decleration(Ast_Ident* iden);
 };
 
 enum {
@@ -50,13 +56,7 @@ struct Ast_Type : public Ast {
     int atom_type;
 };
 
-struct Ast_Statement : public Ast {
-    Ast_Statement() { type = AST_STATEMENT; }
-
-    Ast_Scope scope;
-};
-
-struct Ast_Decleration : public Ast_Statement {
+struct Ast_Decleration : public Ast {
     Ast_Decleration() { type = AST_DECLERATION; }
 
     Ast_Type* type_info;
@@ -129,6 +129,19 @@ struct Ast_Postfix_Expression : public Ast_Expression {
     Ast_Expression* expr;    
 };
 
+struct Ast_Function_Definition : public Ast_Decleration {
+    Ast_Function_Definition() { type = AST_FUNCTION_DEFINITION; }
+    
+    Ast_Scope scope;
+    Array<Ast_Decleration*> args;
+};
+
+struct Ast_Function_Call : public Ast_Postfix_Expression {
+    Ast_Function_Call() { type = AST_FUNCTION_CALL; }
+
+    Array<Ast_Expression*> args;
+};
+
 struct Ast_Translation_Unit : public Ast {
     Ast_Scope scope;
 };
@@ -138,6 +151,8 @@ struct Parser {
     void run();
 
     Ast_Translation_Unit* root;
+    Ast_Scope* current_scope;
+
     Lexer* lexer;
     uint32_t index = 0;
 
@@ -151,12 +166,15 @@ struct Parser {
     Ast_Type* parse_type();
     Ast_Ident* parse_identity();
     Ast_Decleration* parse_decleration();
-    Ast_Decleration* parse_extern_decleration();
-    Ast_Statement* parse_statement();
+    Ast* parse_statement();
     Ast_Expression* parse_expression();
     Ast_Expression* parse_unary_expression();
     Ast_Expression* parse_posfix_expression();
     Ast_Expression* parse_primary_expression();
+    Ast_Function_Definition* parse_function_definition();
+    Ast_Function_Call* parse_function_call();
+
+    void add_identifier_to_scope(Ast_Decleration* dec);
 
     int error_count = 0;
 };

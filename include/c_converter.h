@@ -20,6 +20,7 @@ struct C_Converter {
     void convert_binary_expression(Ast_Expression* expr);
     void convert_unary_expression(Ast_Expression* expr);
     void convert_postfix_expression(Ast_Expression* expr);
+    void convert_function_definition(Ast_Function_Definition* func);
 
     void end();
 };

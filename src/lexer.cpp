@@ -73,6 +73,7 @@ Lexer* Lexer::init(uint8_t* stream) {
     symbols.insert("==", Tok::T_COMPARE_EQUAL);
     symbols.insert("++", Tok::T_INC);
     symbols.insert("--", Tok::T_DEC);
+    symbols.insert("->", Tok::T_DASH_ARROW);
 
     backtrack_symbol_position = 0;
     return lexer;

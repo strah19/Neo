@@ -64,6 +64,7 @@ namespace Tok {
 
             T_INC,
             T_DEC,
+            T_DASH_ARROW
         };
     }
 
@@ -98,8 +99,8 @@ struct Lexer {
     uint8_t* stream;
     char* file;
 
-    uint32_t current_line;
-    uint32_t current_pos;
+    uint32_t current_line = 0;
+    uint32_t current_pos = 0;
 
     void run();
     void log();

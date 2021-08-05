@@ -24,7 +24,6 @@ Parser* Parser::init(Lexer* lexer) {
     return parser;
 }
 
-
 Token* Parser::peek() {
     return (index <= lexer->size) ? &lexer->tokens[index] : nullptr;
 }
@@ -60,7 +59,6 @@ Ast_Expression* Parser::parse_primary_expression() {
     default:
         return nullptr;
     }
-
     return prime;
 }
 
@@ -84,7 +82,6 @@ Ast_Expression* Parser::parse_posfix_expression() {
             AST_DELETE(postfix);
             break;
         }
-
     }
     return prime;
 }
@@ -161,14 +158,17 @@ Ast_Type* Parser::parse_type() {
     switch (peek()->type) {
     case Tok::T_INT:
         type_info->atom_type = AST_TYPE_INT;
+        match(peek()->type, __LINE__);
+        return type_info;
         break;
     default:
         report_error("'%s' is not a valid type on line %d.\n", token_to_str(peek()), peek()->line);
+        match(peek()->type, __LINE__);
         break;
     }
 
-    match(peek()->type, __LINE__);
-    return type_info;
+    AST_DELETE(type_info);
+    return nullptr;
 }
 
 Ast_Ident* Parser::parse_identity() {
@@ -183,67 +183,98 @@ Ast_Ident* Parser::parse_identity() {
     return id;
 }
 
-Ast_Statement* Parser::parse_statement() {
+Ast* Parser::parse_statement() {
+    return parse_decleration();
+}
+
+Ast_Function_Definition* Parser::parse_function_definition() {
+    auto func = AST_NEW(Ast_Function_Definition);
+    func->id = parse_identity();
+    add_identifier_to_scope(func);
+
+    match(Tok::T_COLON, __LINE__);
+    match(Tok::T_LPAR, __LINE__);
+    match(Tok::T_RPAR, __LINE__);
+
+    if (peek()->type != Tok::T_DASH_ARROW) {
+        func->type_info = nullptr;
+    }
+
+    if (peek()->type == Tok::T_LCURLY) {
+        match(Tok::T_LCURLY, __LINE__);
+
+        func->scope.parent = current_scope;
+        current_scope = &func->scope;
+        while (peek()->type != Tok::T_RCURLY) {
+            auto stmt = parse_statement();
+            func->scope.statements.push(stmt);
+        }
+        match(Tok::T_RCURLY, __LINE__);
+        current_scope = func->scope.parent;
+    }
+
+    return func;
+}
+
+Ast_Function_Call* Parser::parse_function_call() {
     return nullptr;
 }
 
 Ast_Decleration* Parser::parse_decleration() {
+    if (peek_off(1)->type == Tok::T_COLON && peek_off(2)->type == Tok::T_LPAR) 
+        return parse_function_definition();
+
     auto dec = AST_NEW(Ast_Decleration);
 
     dec->id = parse_identity();
+    dec->type_info = nullptr;
 
     if (peek()->type == Tok::T_COLON) {
         match(Tok::T_COLON, __LINE__);
+
         dec->type_info = parse_type();
     }
 
-
     if (peek()->type == Tok::T_EQUAL) {
-        if (!dec->type_info)
+        if (!dec->type_info) 
             dec->type = AST_STATEMENT;
         match(Tok::T_EQUAL, __LINE__);
         dec->expr = parse_expression();
     }
 
+    match(Tok::T_SEMI, __LINE__);
+
+    add_identifier_to_scope(dec);
     return dec;
 }
 
-Ast_Decleration* Parser::parse_extern_decleration() {
-    if (peek_off(1)->type == Tok::T_LPAR) {
-        //Function goes here
-        return nullptr;
+void Parser::add_identifier_to_scope(Ast_Decleration* dec) {
+    Entry* e = current_scope->table.look_up(dec->id->name);
+
+    if (e && dec->type == AST_DECLERATION)  {
+        report_error("redecleration of identifier '%s' on line %d.\n", dec->id->name, dec->id->line);
+        error_count++;
     }
 
-    auto dec = parse_decleration();
-    match(Tok::T_SEMI, __LINE__);
-
-    return dec;
+    if (!e) {
+        if (dec->type == AST_DECLERATION || dec->type == AST_FUNCTION_DEFINITION) 
+            current_scope->table.insert(dec->id->name, Tok::T_IDENTIFIER);
+        else {
+            report_error("undeclared identifier '%s' on line %d.\n", dec->id->name, dec->id->line);
+            error_count++;
+        }
+    }    
 }
 
 void Parser::run() {
     root = AST_NEW(Ast_Translation_Unit);
     root->scope.statements.reserve(256);
+    current_scope = &root->scope;
   
     while (peek()->type != Tok::T_EOF) {
-        auto dec = parse_extern_decleration();
+        auto dec = parse_decleration();
 
         root->scope.statements.push(dec);
-
-        Entry* e = root->scope.table.look_up(dec->id->name);
-
-        if (e && dec->type == AST_DECLERATION)  {
-            report_error("redecleration of identifier '%s' on line %d.\n", dec->id->name, dec->id->line);
-            error_count++;
-        }
-
-        if (!e) {
-            if (dec->type != AST_DECLERATION) {
-                report_error("undeclared identifier '%s' on line %d.\n", dec->id->name, dec->id->line);
-                error_count++;
-            }
-            else 
-                root->scope.table.insert(dec->id->name, Tok::T_IDENTIFIER);
-        }
     }
 }
 

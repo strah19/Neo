@@ -8,13 +8,10 @@ typedef double f64;
 typedef uint64_t u64;
 typedef int64_t i64;
 
-void __code_gen() {
-i32 var2=3*(2+(2/2));
-i32 var=var2++;
-i32 test=7+8*2/3;
+void add() {
+i32 a=2;
 }
 
 int main(int argc, char *argv[]) {
-	__code_gen();
 	return 0;
 }
