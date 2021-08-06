@@ -207,6 +207,7 @@ Ast_Function_Definition* Parser::parse_function_definition() {
         current_scope = &func->scope;
         while (peek()->type != Tok::T_RCURLY) {
             auto stmt = parse_statement();
+            printf("%d\n", stmt->type);
             func->scope.statements.push(stmt);
         }
         match(Tok::T_RCURLY, __LINE__);
@@ -237,7 +238,7 @@ Ast_Decleration* Parser::parse_decleration() {
 
     if (peek()->type == Tok::T_EQUAL) {
         if (!dec->type_info) 
-            dec->type = AST_STATEMENT;
+            dec->type = AST_ASSIGNMENT;
         match(Tok::T_EQUAL, __LINE__);
         dec->expr = parse_expression();
     }
@@ -249,7 +250,16 @@ Ast_Decleration* Parser::parse_decleration() {
 }
 
 void Parser::add_identifier_to_scope(Ast_Decleration* dec) {
-    Entry* e = current_scope->table.look_up(dec->id->name);
+    Entry* e = nullptr;
+    auto c = current_scope;
+    while (c) {
+        e = c->table.look_up(dec->id->name);
+
+        if (e)
+            break;
+
+        c = c->parent;
+    }
 
     if (e && dec->type == AST_DECLERATION)  {
         report_error("redecleration of identifier '%s' on line %d.\n", dec->id->name, dec->id->line);

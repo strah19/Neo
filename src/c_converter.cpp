@@ -89,12 +89,15 @@ void C_Converter::convert_unary_expression(Ast_Expression* expr) {
             fprintf(file, ")");
             break;
         }
-    }
 
-    if (unary->expr)
-        convert_unary_expression(unary->expr);
-    else
+        if (unary->expr) {
+            convert_unary_expression(unary->expr);
+        }   
+    }
+    else if (expr->type == AST_PRIMARY_EXPRESSION) {
         convert_postfix_expression(expr);
+
+    }
 }
 
 void C_Converter::convert_binary_expression(Ast_Expression* expr) {
@@ -111,6 +114,9 @@ void C_Converter::convert_binary_expression(Ast_Expression* expr) {
             break;
         case AST_OPERATOR_DIVISION:
             fprintf(file, "/");
+            break;
+         case AST_OPERATOR_MINUS:
+            fprintf(file, "-");
             break;
         }
 
@@ -155,7 +161,7 @@ void C_Converter::convert_function_definition(Ast_Function_Definition* func) {
 }
 
 void C_Converter::convert_decleration(Ast_Decleration* decleration) {
-    if (decleration->type == AST_DECLERATION) {
+    if (decleration->type == AST_DECLERATION || decleration->type == AST_ASSIGNMENT) {
         if (decleration->type_info)
             convert_type(decleration->type_info);
         convert_identifier(decleration->id);

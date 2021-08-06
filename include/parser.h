@@ -14,6 +14,7 @@ enum {
     AST_FUNCTION_CALL,
     AST_STATEMENT,
     AST_IDENTIFIER,
+    AST_ASSIGNMENT,
     AST_DECLERATION,
     AST_TYPE,
     AST_SCOPE
@@ -32,10 +33,10 @@ struct Ast_Function_Definition;
 
 struct Ast_Scope : public Ast {
     Ast_Scope() { type = AST_SCOPE; }
-    
+
     SymTable table;
     Array<Ast*> statements;
-    Ast_Scope* parent;
+    Ast_Scope* parent = nullptr;
 
     Ast_Decleration* get_decleration(Ast_Ident* iden);
 };
