@@ -36,9 +36,9 @@ Token* Parser::peek_off(int off) {
     return (index + off <= lexer->size) ? &lexer->tokens[index + off] : nullptr;  
 }
 
-void Parser::match(int type, int line) {
+void Parser::match(int type) {
     if (peek()->type != type) 
-        report_error("Expected '%s' on line %d [In 'parser.cpp' on line %d].", type_to_str(type), peek()->line, line);
+        report_error("Expected '%s' on line %d.\n", type_to_str(type), peek()->line);
 
     next();
 }
@@ -50,7 +50,7 @@ Ast_Expression* Parser::parse_primary_expression() {
     case Tok::T_INT_CONST:
         prime->v_type = AST_INT_P;
         prime->int_const = peek()->int_const;
-        match(Tok::T_INT_CONST, __LINE__);     
+        match(Tok::T_INT_CONST);     
         break;
     case Tok::T_IDENTIFIER:
         prime->v_type = AST_ID_P;
@@ -68,12 +68,12 @@ Ast_Expression* Parser::parse_posfix_expression() {
         auto postfix = AST_NEW(Ast_Postfix_Expression);
         switch (peek()->type) {
         case Tok::T_INC:
-            match(Tok::T_INC, __LINE__);
+            match(Tok::T_INC);
             postfix->op = AST_UNARY_INC;
             prime->expr = postfix;
             break;
         case Tok::T_DEC:
-            match(Tok::T_DEC, __LINE__);
+            match(Tok::T_DEC);
             postfix->op = AST_UNARY_DEC;
             prime->expr = postfix;
             break;
@@ -90,25 +90,25 @@ Ast_Expression* Parser::parse_unary_expression() {
     auto unary = AST_NEW(Ast_Unary_Expression);
     switch(peek()->type) {
     case Tok::T_INC:
-        match(Tok::T_INC, __LINE__);
+        match(Tok::T_INC);
         unary->op = AST_UNARY_INC;
         break;
     case Tok::T_DEC:
-        match(Tok::T_DEC, __LINE__);
+        match(Tok::T_DEC);
         unary->op = AST_UNARY_DEC;
         break;
     case Tok::T_LPAR:
-        match(Tok::T_LPAR, __LINE__);
+        match(Tok::T_LPAR);
         unary->op = AST_UNARY_NESTED;
         unary->nested_expr = parse_expression();
-        match(Tok::T_RPAR, __LINE__);
+        match(Tok::T_RPAR);
         break;
     case Tok::T_STAR:
-        match(Tok::T_STAR, __LINE__);
+        match(Tok::T_STAR);
         unary->op = AST_UNARY_DEREF;
         break;
     case Tok::T_AMBERSAND:
-        match(Tok::T_AMBERSAND, __LINE__);
+        match(Tok::T_AMBERSAND);
         unary->op = AST_UNARY_REF;
         break;
     default:
@@ -145,7 +145,7 @@ Ast_Expression* Parser::parse_expression() {
         return lexpr;
     }
 
-    match(peek()->type, __LINE__);
+    match(peek()->type);
     expr->left = lexpr;
     expr->right = parse_expression();
 
@@ -158,12 +158,12 @@ Ast_Type* Parser::parse_type() {
     switch (peek()->type) {
     case Tok::T_INT:
         type_info->atom_type = AST_TYPE_INT;
-        match(peek()->type, __LINE__);
+        match(peek()->type);
         return type_info;
         break;
     default:
         report_error("'%s' is not a valid type on line %d.\n", token_to_str(peek()), peek()->line);
-        match(peek()->type, __LINE__);
+        match(peek()->type);
         break;
     }
 
@@ -179,7 +179,7 @@ Ast_Ident* Parser::parse_identity() {
     memcpy(name, peek()->identifier, id_len);
     id->name = name;
 
-    match(Tok::T_IDENTIFIER, __LINE__);
+    match(Tok::T_IDENTIFIER);
     return id;
 }
 
@@ -192,25 +192,25 @@ Ast_Function_Definition* Parser::parse_function_definition() {
     func->id = parse_identity();
     add_identifier_to_scope(func);
 
-    match(Tok::T_COLON, __LINE__);
-    match(Tok::T_LPAR, __LINE__);
-    match(Tok::T_RPAR, __LINE__);
+    match(Tok::T_COLON);
+    match(Tok::T_LPAR);
+    match(Tok::T_RPAR);
 
     if (peek()->type != Tok::T_DASH_ARROW) {
         func->type_info = nullptr;
     }
 
     if (peek()->type == Tok::T_LCURLY) {
-        match(Tok::T_LCURLY, __LINE__);
+        match(Tok::T_LCURLY);
 
         func->scope.parent = current_scope;
         current_scope = &func->scope;
+
         while (peek()->type != Tok::T_RCURLY) {
             auto stmt = parse_statement();
-            printf("%d\n", stmt->type);
-            func->scope.statements.push(stmt);
+            func->scope.statements[func->scope.size++] = stmt;
         }
-        match(Tok::T_RCURLY, __LINE__);
+        match(Tok::T_RCURLY);
         current_scope = func->scope.parent;
     }
 
@@ -218,12 +218,23 @@ Ast_Function_Definition* Parser::parse_function_definition() {
 }
 
 Ast_Function_Call* Parser::parse_function_call() {
-    return nullptr;
+    auto call = AST_NEW(Ast_Function_Call);
+    call->id = parse_identity();
+
+    match(Tok::T_LPAR);
+    match(Tok::T_RPAR);
+    match(Tok::T_SEMI);
+
+    return call;
 }
 
 Ast_Decleration* Parser::parse_decleration() {
-    if (peek_off(1)->type == Tok::T_COLON && peek_off(2)->type == Tok::T_LPAR) 
+    if ((peek_off(1)->type == Tok::T_COLON && peek_off(2)->type == Tok::T_LPAR)) {
         return parse_function_definition();
+    }
+    else if (peek_off(1)->type == Tok::T_LPAR) {
+        return parse_function_call();
+    }
 
     auto dec = AST_NEW(Ast_Decleration);
 
@@ -231,7 +242,7 @@ Ast_Decleration* Parser::parse_decleration() {
     dec->type_info = nullptr;
 
     if (peek()->type == Tok::T_COLON) {
-        match(Tok::T_COLON, __LINE__);
+        match(Tok::T_COLON);
 
         dec->type_info = parse_type();
     }
@@ -239,11 +250,11 @@ Ast_Decleration* Parser::parse_decleration() {
     if (peek()->type == Tok::T_EQUAL) {
         if (!dec->type_info) 
             dec->type = AST_ASSIGNMENT;
-        match(Tok::T_EQUAL, __LINE__);
+        match(Tok::T_EQUAL);
         dec->expr = parse_expression();
     }
 
-    match(Tok::T_SEMI, __LINE__);
+    match(Tok::T_SEMI);
 
     add_identifier_to_scope(dec);
     return dec;
@@ -278,13 +289,12 @@ void Parser::add_identifier_to_scope(Ast_Decleration* dec) {
 
 void Parser::run() {
     root = AST_NEW(Ast_Translation_Unit);
-    root->scope.statements.reserve(256);
     current_scope = &root->scope;
   
     while (peek()->type != Tok::T_EOF) {
         auto dec = parse_decleration();
 
-        root->scope.statements.push(dec);
+        root->scope.statements[root->scope.size++] = dec;
     }
 }
 

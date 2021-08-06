@@ -17,8 +17,10 @@ const char* C_preamble_buffer =
 
 const char* C_postamble_buffer = 
 "\n"
-"int main(int argc, char *argv[]) {\n"
-"\treturn 0;\n}";
+"int main(int argc, char *argv[]) {\n";
+
+Ast_Function_Call* run_directives[64];
+size_t run_directives_size = 0;
 
 FILE* open_c_file(const char* file_name, char* buf) {    
     memset(buf, 0, FILE_NAME_LEN);
@@ -153,11 +155,15 @@ void C_Converter::convert_function_definition(Ast_Function_Definition* func) {
     fprintf(file, ") ");
     fprintf(file, "{\n");
 
-    for(int i = 0; i < func->scope.statements.top(); i++) {
-        convert_decleration(static_cast<Ast_Decleration*>(func->scope.statements.get_arr()[i]));
+    for(int i = 0; i < func->scope.size; i++) {
+        convert_decleration(static_cast<Ast_Decleration*>(func->scope.statements[i]));
     }
 
     fprintf(file, "}\n");
+}
+
+void C_Converter::convert_function_call(Ast_Function_Call* call) {
+    run_directives[run_directives_size++] = call;
 }
 
 void C_Converter::convert_decleration(Ast_Decleration* decleration) {
@@ -172,9 +178,10 @@ void C_Converter::convert_decleration(Ast_Decleration* decleration) {
         }
         end();
     }
-    else if (decleration->type == AST_FUNCTION_DEFINITION) {
+    else if (decleration->type == AST_FUNCTION_DEFINITION) 
         convert_function_definition(static_cast<Ast_Function_Definition*>(decleration));
-    }
+    else if(decleration->type == AST_FUNCTION_CALL) 
+        convert_function_call(static_cast<Ast_Function_Call*>(decleration));
 }
 
 void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root) {
@@ -182,11 +189,18 @@ void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root) {
     char buf[FILE_NAME_LEN];
     c.file = open_c_file(obj_name, buf);
 
-    for(int i = 0; i < root->scope.statements.top(); i++) {
-        c.convert_decleration(static_cast<Ast_Decleration*>(root->scope.statements.get_arr()[i]));
+    for(int i = 0; i < root->scope.size; i++) {
+        c.convert_decleration(static_cast<Ast_Decleration*>(root->scope.statements[i]));
     }
 
     fprintf(c.file, C_postamble_buffer);
+
+    for (int i = 0; i < run_directives_size; i++) {
+        fprintf(c.file, "%s", run_directives[i]->id->name);
+        fprintf(c.file, "();\n");
+    }
+
+    fprintf(c.file, "\treturn 0;\n}");
     fclose(c.file);
 
     compile_and_link(buf, obj_name);

@@ -65,6 +65,7 @@ Lexer* Lexer::init(uint8_t* stream) {
     keywords.insert("byte", Tok::T_BYTE);
     keywords.insert("double", Tok::T_DOUBLE);
     keywords.insert("float", Tok::T_FLOAT);
+    keywords.insert("run", Tok::T_RUN);
 
     symbols.insert(":=", Tok::T_COLON_ASSIGN);
     symbols.insert("<=", Tok::T_LTE);

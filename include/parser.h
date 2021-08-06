@@ -35,7 +35,9 @@ struct Ast_Scope : public Ast {
     Ast_Scope() { type = AST_SCOPE; }
 
     SymTable table;
-    Array<Ast*> statements;
+    Ast* statements[64];
+    int size = 0;
+
     Ast_Scope* parent = nullptr;
 
     Ast_Decleration* get_decleration(Ast_Ident* iden);
@@ -130,14 +132,21 @@ struct Ast_Postfix_Expression : public Ast_Expression {
     Ast_Expression* expr;    
 };
 
+enum {
+    AST_FUNCTION_NONE = 0x00,
+    AST_FUNCTION_GLOBAL = 0x01,
+    AST_FUNCTION_LOCAL = 0x02,
+};
+
 struct Ast_Function_Definition : public Ast_Decleration {
     Ast_Function_Definition() { type = AST_FUNCTION_DEFINITION; }
     
     Ast_Scope scope;
     Array<Ast_Decleration*> args;
+    int flags = AST_FUNCTION_GLOBAL;
 };
 
-struct Ast_Function_Call : public Ast_Postfix_Expression {
+struct Ast_Function_Call : public Ast_Decleration {
     Ast_Function_Call() { type = AST_FUNCTION_CALL; }
 
     Array<Ast_Expression*> args;
@@ -160,7 +169,7 @@ struct Parser {
     Token* peek();
     Token* peek_off(int off);
     Token* next();
-    void match(int type, int parser_line);
+    void match(int type);
 
     Ast* default_ast(Ast* ast);
 

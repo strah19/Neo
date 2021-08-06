@@ -10,14 +10,19 @@ typedef int64_t i64;
 
 i32 i=7;
 void add() {
-i32 b=1;
-i32 d=2;
-i=3;
-i32 a=2;
+i=2;
+i32 a=4;
+i32 c=8;
 }
+i32 false=0;
+i32 true=1;
 void sub() {
+i32 working=true;
 }
+i32 working=3;
 
 int main(int argc, char *argv[]) {
+sub();
+add();
 	return 0;
 }

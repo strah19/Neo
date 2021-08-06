@@ -1,14 +1,21 @@
 i : int = 7;
 
 add : () {
-    b : int = 1;
-    d : int = 2;
-    i = 3;
-    a : int = 2;
+    i = 2;
+    a : int = 4;
+    c : int = 8;
 }
 
+false : int = 0;
+true : int = 1;
+
 sub : () {
-    
+    working : int = true;
 }
+
+working : int = 3;
+
+sub();
+add();
 
 ` 
