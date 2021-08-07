@@ -1,9 +1,7 @@
 i : int = 7;
 
-add : () {
-    i = 2;
-    a : int = 4;
-    c : int = 8;
+add : (a: int, b: int) {
+    sum : int = a + b;
 }
 
 false : int = 0;
@@ -16,6 +14,8 @@ sub : () {
 working : int = 3;
 
 sub();
-add();
+
+add(1, 2);
+
 
 ` 

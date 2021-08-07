@@ -142,14 +142,16 @@ struct Ast_Function_Definition : public Ast_Decleration {
     Ast_Function_Definition() { type = AST_FUNCTION_DEFINITION; }
     
     Ast_Scope scope;
-    Array<Ast_Decleration*> args;
+    Ast_Decleration* args[64];
+    size_t arg_count = 0;
     int flags = AST_FUNCTION_GLOBAL;
 };
 
 struct Ast_Function_Call : public Ast_Decleration {
     Ast_Function_Call() { type = AST_FUNCTION_CALL; }
 
-    Array<Ast_Expression*> args;
+    Ast_Expression* args[64];
+    size_t arg_count = 0;
 };
 
 struct Ast_Translation_Unit : public Ast {

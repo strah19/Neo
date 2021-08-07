@@ -152,6 +152,13 @@ void C_Converter::convert_function_definition(Ast_Function_Definition* func) {
     convert_identifier(func->id);
 
     fprintf(file, "(");
+    for(int i = 0; i < func->arg_count; i++) {
+        convert_type(func->args[i]->type_info);
+        convert_identifier(func->args[i]->id);
+
+        if (i < func->arg_count - 1)
+            fprintf(file, ",");
+    }
     fprintf(file, ") ");
     fprintf(file, "{\n");
 
@@ -196,8 +203,13 @@ void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root) {
     fprintf(c.file, C_postamble_buffer);
 
     for (int i = 0; i < run_directives_size; i++) {
-        fprintf(c.file, "%s", run_directives[i]->id->name);
-        fprintf(c.file, "();\n");
+        fprintf(c.file, "\t%s(", run_directives[i]->id->name);
+        for (int j = 0; j < run_directives[i]->arg_count; j++) {       
+            c.convert_expression(run_directives[i]->args[j]);
+            if (j < run_directives[i]->arg_count - 1)
+                fprintf(c.file, ",");
+        }
+        fprintf(c.file, ");\n");
     }
 
     fprintf(c.file, "\treturn 0;\n}");

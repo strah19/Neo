@@ -194,6 +194,20 @@ Ast_Function_Definition* Parser::parse_function_definition() {
 
     match(Tok::T_COLON);
     match(Tok::T_LPAR);
+    while(peek()->type != Tok::T_RPAR) {
+        auto dec = AST_NEW(Ast_Decleration);
+
+        dec->id = parse_identity();
+        printf("%s\n", dec->id->name);
+        match(Tok::T_COLON);
+        dec->type_info = parse_type();
+
+        func->args[func->arg_count++] = dec;
+
+        if (peek()->type == Tok::T_RPAR)
+            break;
+        match(Tok::T_COMMA);
+    }
     match(Tok::T_RPAR);
 
     if (peek()->type != Tok::T_DASH_ARROW) {
@@ -222,6 +236,15 @@ Ast_Function_Call* Parser::parse_function_call() {
     call->id = parse_identity();
 
     match(Tok::T_LPAR);
+
+    while(peek()->type != Tok::T_RPAR) {
+        call->args[call->arg_count++] = parse_expression();
+
+        if (peek()->type == Tok::T_RPAR)
+            break;
+        match(Tok::T_COMMA);
+    }
+
     match(Tok::T_RPAR);
     match(Tok::T_SEMI);
 
