@@ -22,6 +22,7 @@ struct C_Converter {
     void convert_postfix_expression(Ast_Expression* expr);
     void convert_function_definition(Ast_Function_Definition* func);
     void convert_function_call(Ast_Function_Call* call);
+    void convert_statement(Ast* ast);
 
     void end();
 };

@@ -9,18 +9,19 @@ typedef uint64_t u64;
 typedef int64_t i64;
 
 i32 i=7;
-void add(i32 a,i32 b) {
-i32 sum=a+b;
+i32 add(i32 a,i32 b) {
+return a+b;
 }
 i32 false=0;
 i32 true=1;
 void sub() {
 i32 working=true;
+add(2,3);
 }
 i32 working=3;
 
 int main(int argc, char *argv[]) {
-	sub();
-	add(1,2);
+sub();
+add(1,2);
 	return 0;
 }

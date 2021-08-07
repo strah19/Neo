@@ -145,9 +145,32 @@ void C_Converter::convert_type(Ast_Type* type) {
     }
 }
 
+void C_Converter::convert_statement(Ast* ast) {
+    switch (ast->type) {
+    case AST_STATEMENT: {
+        auto stmt = static_cast<Ast_Statement*>(ast);
+
+        switch (stmt->flags) {
+        case AST_RETURN: {
+            fprintf(file, "return ");
+            convert_expression(stmt->expr);
+            fprintf(file, ";\n");
+            break;
+        }
+        }
+    }
+    default: {
+        convert_decleration(static_cast<Ast_Decleration*>(ast));
+    }
+    }
+}
+
 void C_Converter::convert_function_definition(Ast_Function_Definition* func) {
     if (!func->type_info)
         fprintf(file, "void ");
+    else {
+        convert_type(func->type_info);
+    }
     
     convert_identifier(func->id);
 
@@ -163,14 +186,20 @@ void C_Converter::convert_function_definition(Ast_Function_Definition* func) {
     fprintf(file, "{\n");
 
     for(int i = 0; i < func->scope.size; i++) {
-        convert_decleration(static_cast<Ast_Decleration*>(func->scope.statements[i]));
+        convert_statement(func->scope.statements[i]);
     }
 
     fprintf(file, "}\n");
 }
 
 void C_Converter::convert_function_call(Ast_Function_Call* call) {
-    run_directives[run_directives_size++] = call;
+    fprintf(file, "%s(", call->id->name);
+        for (int j = 0; j < call->arg_count; j++) {       
+            convert_expression(call->args[j]);
+            if (j < call->arg_count - 1)
+                fprintf(file, ",");
+        }
+    fprintf(file, ");\n");
 }
 
 void C_Converter::convert_decleration(Ast_Decleration* decleration) {
@@ -187,8 +216,13 @@ void C_Converter::convert_decleration(Ast_Decleration* decleration) {
     }
     else if (decleration->type == AST_FUNCTION_DEFINITION) 
         convert_function_definition(static_cast<Ast_Function_Definition*>(decleration));
-    else if(decleration->type == AST_FUNCTION_CALL) 
-        convert_function_call(static_cast<Ast_Function_Call*>(decleration));
+    else if(decleration->type == AST_FUNCTION_CALL) {
+        auto call = static_cast<Ast_Function_Call*>(decleration);
+        if (call->run_in_directive)
+            run_directives[run_directives_size++] = call;
+        else
+            convert_function_call(call);
+    }
 }
 
 void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root) {
@@ -203,13 +237,7 @@ void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root) {
     fprintf(c.file, C_postamble_buffer);
 
     for (int i = 0; i < run_directives_size; i++) {
-        fprintf(c.file, "\t%s(", run_directives[i]->id->name);
-        for (int j = 0; j < run_directives[i]->arg_count; j++) {       
-            c.convert_expression(run_directives[i]->args[j]);
-            if (j < run_directives[i]->arg_count - 1)
-                fprintf(c.file, ",");
-        }
-        fprintf(c.file, ");\n");
+        c.convert_function_call(run_directives[i]);
     }
 
     fprintf(c.file, "\treturn 0;\n}");

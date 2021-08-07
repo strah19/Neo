@@ -1,7 +1,7 @@
 i : int = 7;
 
-add : (a: int, b: int) {
-    sum : int = a + b;
+add : (a: int, b: int) -> int {
+    return a + b;
 }
 
 false : int = 0;
@@ -9,6 +9,7 @@ true : int = 1;
 
 sub : () {
     working : int = true;
+    add(2, 3);
 }
 
 working : int = 3;

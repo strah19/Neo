@@ -152,6 +152,21 @@ struct Ast_Function_Call : public Ast_Decleration {
 
     Ast_Expression* args[64];
     size_t arg_count = 0;
+    bool run_in_directive = false;
+};
+
+enum {
+    AST_ATTRIB_NONE = 0x00,
+    AST_RETURN = 0x01,
+    AST_BREAK = 0x02
+};
+
+struct Ast_Statement : public Ast {
+    Ast_Statement() { type = AST_STATEMENT; }
+
+    int flags = AST_ATTRIB_NONE;
+
+    Ast_Expression* expr;
 };
 
 struct Ast_Translation_Unit : public Ast {

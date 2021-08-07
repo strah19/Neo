@@ -50,7 +50,6 @@ namespace Tok {
             T_LTE,
             T_GTE,
             T_NOT_EQUAL,
-            T_RUN,
             
             T_CONST,
             T_INT,

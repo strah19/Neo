@@ -184,7 +184,20 @@ Ast_Ident* Parser::parse_identity() {
 }
 
 Ast* Parser::parse_statement() {
-    return parse_decleration();
+    switch (peek()->type) {
+    case Tok::T_RETURN: {
+        match(Tok::T_RETURN);
+        auto stmt = AST_NEW(Ast_Statement);
+        stmt->flags |= AST_RETURN;
+        stmt->expr = parse_expression();
+        match(Tok::T_SEMI);
+        return stmt;
+    }
+    default:
+        return parse_decleration();
+    }
+
+    return nullptr;
 }
 
 Ast_Function_Definition* Parser::parse_function_definition() {
@@ -198,7 +211,6 @@ Ast_Function_Definition* Parser::parse_function_definition() {
         auto dec = AST_NEW(Ast_Decleration);
 
         dec->id = parse_identity();
-        printf("%s\n", dec->id->name);
         match(Tok::T_COLON);
         dec->type_info = parse_type();
 
@@ -210,8 +222,11 @@ Ast_Function_Definition* Parser::parse_function_definition() {
     }
     match(Tok::T_RPAR);
 
-    if (peek()->type != Tok::T_DASH_ARROW) {
-        func->type_info = nullptr;
+    func->type_info = nullptr;
+    if (peek()->type == Tok::T_DASH_ARROW) {
+        match(Tok::T_DASH_ARROW);
+
+        func->type_info = parse_type();
     }
 
     if (peek()->type == Tok::T_LCURLY) {
@@ -234,6 +249,9 @@ Ast_Function_Definition* Parser::parse_function_definition() {
 Ast_Function_Call* Parser::parse_function_call() {
     auto call = AST_NEW(Ast_Function_Call);
     call->id = parse_identity();
+
+    if (current_scope->parent == nullptr)
+        call->run_in_directive = true;
 
     match(Tok::T_LPAR);
 
