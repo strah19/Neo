@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     end_debug_benchmark("lexer");
 
     lexer->log();
-
+    
     Parser* parser = Parser::init(lexer);
     
     begin_debug_benchmark();

@@ -8,15 +8,26 @@ false : int = 0;
 true : int = 1;
 
 sub : () {
+    if 1 == 1 {
+        s : int = 45;
+    }
+    elif 2 == 2 {
+        
+    }      
+    else {
+        
+    } 
+
     working : int = true;
     add(2, 3);
 }
+
+character : byte = '3';
 
 working : int = 3;
 
 sub();
 
 add(1, 2);
-
 
 ` 

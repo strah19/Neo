@@ -144,6 +144,16 @@ void create_numeric_token(Lexer* lexer, int type, const char* int_const) {
     lexer->size++;
 }
 
+void create_char_const_token(Lexer* lexer, int type, char char_const) {
+    Token t = fill_token(type, lexer->current_pos, lexer->current_line);
+    t.char_const = char_const;
+    printf("%c\n", t.char_const);
+
+    check_for_overflow(lexer);
+    lexer->tokens[lexer->size] = t;
+    lexer->size++;    
+}
+
 bool is_special_character(char character) {
     return (character == ' ' || character == '\n' || character == '\t');
 }
@@ -205,6 +215,19 @@ void multi_line_comment(Lexer* lexer, int* type, int* nested) {
     }
 }
 
+bool check_char_const(Lexer* lexer) {
+    if (*lexer->stream == '\'') {
+        lexer->stream++;
+
+        create_char_const_token(lexer, Tok::T_CHAR_CONST, *lexer->stream);
+        lexer->stream++;
+        lexer->stream++;
+        lexer->current_pos += 3;
+        return true;
+    }
+    return false;
+}
+
 void Lexer::run() {
     int type = 0;
     int nested = 0;
@@ -236,6 +259,9 @@ void Lexer::run() {
             }
 
             if (!is_special_character(*stream)) {
+                if (check_char_const(this))
+                    continue;
+
                 current[current_len++] = *stream;
                 if (current_len == 1) {
                     type = get_type_of_token(*stream);
@@ -270,16 +296,17 @@ const char* token_to_str(Token* token) {
     if (e) 
         return e->name;
 
+    static char single_char_token[2] = { '\0' };
+
     switch(token->type) {
         case Tok::T_IDENTIFIER: return token->identifier;
         case Tok::T_INT_CONST:  return std::to_string(token->int_const).c_str();
+        case Tok::T_CHAR_CONST:  single_char_token[0] = token->char_const; return single_char_token;
         case Tok::T_EOF:        return "End of file";
         default: break;
     }
 
-    static char single_char_token[2] = { '\0' };
     single_char_token[0] = token->type;
-
     return single_char_token;
 }
 

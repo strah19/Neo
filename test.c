@@ -15,9 +15,17 @@ return a+b;
 i32 false=0;
 i32 true=1;
 void sub() {
+if(1==1){
+i32 s=45;
+}
+else if(2==2){
+}
+else{
+}
 i32 working=true;
 add(2,3);
 }
+char character='3';
 i32 working=3;
 
 int main(int argc, char *argv[]) {

@@ -60,6 +60,7 @@ namespace Tok {
 
             T_IDENTIFIER,
             T_INT_CONST,
+            T_CHAR_CONST,
             T_FLOAT_CONST,
 
             T_INC,
@@ -76,6 +77,7 @@ struct Token {
     union {
         int int_const;
         float float_const;
+        char char_const;
         char identifier[MAX_TOKEN_SIZE];
     };
 };

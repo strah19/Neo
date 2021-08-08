@@ -16,6 +16,7 @@ enum {
     AST_IDENTIFIER,
     AST_ASSIGNMENT,
     AST_DECLERATION,
+    AST_CONDITION,
     AST_TYPE,
     AST_SCOPE
 };
@@ -44,7 +45,8 @@ struct Ast_Scope : public Ast {
 };
 
 enum {
-    AST_TYPE_INT
+    AST_TYPE_INT,
+    AST_TYPE_BYTE
 };
 
 struct Ast_Ident : public Ast {
@@ -77,6 +79,7 @@ enum {
     AST_OPERATOR_MULTIPLICATIVE,
     AST_OPERATOR_DIVISION,
     AST_OPERATOR_MODULO,
+    AST_OPERATOR_COMPARITIVE_EQUAL,
 };
 
 struct Ast_Binary_Expression : public Ast_Expression {
@@ -91,6 +94,7 @@ enum {
     AST_INT_P,
     AST_FLOAT_P,
     AST_STR_P,
+    AST_CHAR_P,
     AST_ID_P
 };
 
@@ -102,6 +106,7 @@ struct Ast_Primary_Expression : public Ast_Expression {
         int64_t int_const;
         double float_const;
         char* string_literal;
+        char char_const;
         Ast_Ident *ident;
     };
 
@@ -169,6 +174,21 @@ struct Ast_Statement : public Ast {
     Ast_Expression* expr;
 };
 
+enum {
+    AST_CONDITION_IF,
+    AST_CONDITION_ELSE,
+    AST_CONDITION_ELIF
+};
+
+struct Ast_Conditional : public Ast {
+    Ast_Conditional() { type = AST_CONDITION; }
+
+    Ast_Expression* condition;
+    Ast_Scope scope;
+    int flag = AST_CONDITION_IF;
+    Ast_Conditional* next;
+};
+
 struct Ast_Translation_Unit : public Ast {
     Ast_Scope scope;
 };
@@ -200,6 +220,7 @@ struct Parser {
     Ast_Expression* parse_primary_expression();
     Ast_Function_Definition* parse_function_definition();
     Ast_Function_Call* parse_function_call();
+    void parse_scope(Ast_Scope* scope);
 
     void add_identifier_to_scope(Ast_Decleration* dec);
 

@@ -56,6 +56,11 @@ Ast_Expression* Parser::parse_primary_expression() {
         prime->v_type = AST_ID_P;
         prime->ident = parse_identity();
         break;
+    case Tok::T_CHAR_CONST:
+        prime->v_type = AST_CHAR_P;
+        prime->char_const = peek()->char_const;
+        match(Tok::T_CHAR_CONST);     
+        break;
     default:
         return nullptr;
     }
@@ -140,6 +145,9 @@ Ast_Expression* Parser::parse_expression() {
     case Tok::T_MINUS:
         expr->op = AST_OPERATOR_MINUS;
         break;
+    case Tok::T_COMPARE_EQUAL:
+        expr->op = AST_OPERATOR_COMPARITIVE_EQUAL;
+        break;
     default:
         AST_DELETE(expr);
         return lexpr;
@@ -161,6 +169,10 @@ Ast_Type* Parser::parse_type() {
         match(peek()->type);
         return type_info;
         break;
+    case Tok::T_BYTE:
+        type_info->atom_type = AST_TYPE_BYTE;
+        match(peek()->type);
+        return type_info;
     default:
         report_error("'%s' is not a valid type on line %d.\n", token_to_str(peek()), peek()->line);
         match(peek()->type);
@@ -193,11 +205,52 @@ Ast* Parser::parse_statement() {
         match(Tok::T_SEMI);
         return stmt;
     }
+    case Tok::T_IF: {
+        match(Tok::T_IF);
+        auto condition = AST_NEW(Ast_Conditional);
+        condition->condition = parse_expression();
+        parse_scope(&condition->scope);
+
+        auto parent = condition;
+        while (peek()->type == Tok::T_ELIF || peek()->type == Tok::T_ELSE) {
+            parent->next = AST_NEW(Ast_Conditional);
+            parent = parent->next;
+
+            if (peek()->type == Tok::T_ELIF) {
+                match(Tok::T_ELIF);
+                parent->flag = AST_CONDITION_ELIF;
+                parent->condition = parse_expression();
+            }
+            else {
+                match(Tok::T_ELSE);
+                parent->flag = AST_CONDITION_ELSE;
+            }
+
+            parse_scope(&parent->scope);
+        }
+
+        return condition;
+    }
     default:
         return parse_decleration();
     }
 
     return nullptr;
+}
+
+void Parser::parse_scope(Ast_Scope* scope) {
+    match(Tok::T_LCURLY);
+
+    scope->parent = current_scope;
+    current_scope = scope;
+
+    while (peek()->type != Tok::T_RCURLY) {
+        auto stmt = parse_statement();
+        scope->statements[scope->size++] = stmt;
+    }
+
+    match(Tok::T_RCURLY);
+    current_scope = scope->parent;    
 }
 
 Ast_Function_Definition* Parser::parse_function_definition() {
@@ -229,19 +282,8 @@ Ast_Function_Definition* Parser::parse_function_definition() {
         func->type_info = parse_type();
     }
 
-    if (peek()->type == Tok::T_LCURLY) {
-        match(Tok::T_LCURLY);
-
-        func->scope.parent = current_scope;
-        current_scope = &func->scope;
-
-        while (peek()->type != Tok::T_RCURLY) {
-            auto stmt = parse_statement();
-            func->scope.statements[func->scope.size++] = stmt;
-        }
-        match(Tok::T_RCURLY);
-        current_scope = func->scope.parent;
-    }
+    if (peek()->type == Tok::T_LCURLY) 
+        parse_scope(&func->scope);
 
     return func;
 }

@@ -51,6 +51,9 @@ void C_Converter::convert_postfix_expression(Ast_Expression* expr) {
         case AST_ID_P:
             fprintf(file, "%s", p->ident->name);
             break;
+        case AST_CHAR_P:
+            fprintf(file, "'%c'", p->char_const);
+            break;
         }
 
         if (p->expr) {
@@ -120,6 +123,8 @@ void C_Converter::convert_binary_expression(Ast_Expression* expr) {
          case AST_OPERATOR_MINUS:
             fprintf(file, "-");
             break;
+        case AST_OPERATOR_COMPARITIVE_EQUAL:
+            fprintf(file, "==");
         }
 
         convert_expression(bin->right);
@@ -142,6 +147,9 @@ void C_Converter::convert_type(Ast_Type* type) {
     case AST_TYPE_INT:
         fprintf(file, "i32 ");
         break;
+    case AST_TYPE_BYTE:
+        fprintf(file, "char ");
+        break;
     }
 }
 
@@ -158,6 +166,42 @@ void C_Converter::convert_statement(Ast* ast) {
             break;
         }
         }
+
+        break;
+    }
+    case AST_CONDITION: {
+        auto condition = static_cast<Ast_Conditional*>(ast);
+
+        fprintf(file, "if(");
+        convert_expression(condition->condition);
+        fprintf(file, "){\n");
+
+        for(int i = 0; i < condition->scope.size; i++) {
+            convert_statement(condition->scope.statements[i]);
+        }
+
+        fprintf(file, "}\n");
+
+        auto current = condition->next;
+        while (current) {
+            if (current->flag == AST_CONDITION_ELIF) {
+                fprintf(file, "else if(");
+                convert_expression(current->condition);
+                fprintf(file, "){\n");
+            }
+            else if(current->flag == AST_CONDITION_ELSE) 
+                fprintf(file, "else{\n");
+
+            for(int i = 0; i < current->scope.size; i++) {
+                convert_statement(condition->scope.statements[i]);
+            }
+
+            fprintf(file, "}\n");
+
+            current = current->next;
+        }
+
+        break;
     }
     default: {
         convert_decleration(static_cast<Ast_Decleration*>(ast));
