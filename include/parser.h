@@ -64,13 +64,15 @@ struct Ast_Type : public Ast {
 struct Ast_Decleration : public Ast {
     Ast_Decleration() { type = AST_DECLERATION; }
 
-    Ast_Type* type_info;
-    Ast_Ident* id;
-    Ast_Expression* expr;
+    Ast_Type* type_info = nullptr;
+    Ast_Ident* id = nullptr;
+    Ast_Expression* expr = nullptr;
 };
 
 struct Ast_Expression : public Ast {
     Ast_Expression() { type = AST_EXPRESSION; }
+
+    Ast_Expression* next = nullptr;
 };
 
 enum {
@@ -80,14 +82,15 @@ enum {
     AST_OPERATOR_DIVISION,
     AST_OPERATOR_MODULO,
     AST_OPERATOR_COMPARITIVE_EQUAL,
+    AST_OPERATOR_COMPARITIVE_NOT_EQUAL
 };
 
 struct Ast_Binary_Expression : public Ast_Expression {
     Ast_Binary_Expression() { type = AST_BINARY_EXPRESSION; }
     int op;
 
-    Ast_Expression* left;
-    Ast_Expression* right;
+    Ast_Expression* left = nullptr;
+    Ast_Expression* right = nullptr;
 };
 
 enum {
@@ -110,7 +113,7 @@ struct Ast_Primary_Expression : public Ast_Expression {
         Ast_Ident *ident;
     };
 
-    Ast_Expression* expr;
+    Ast_Expression* expr = nullptr;
 };
 
 enum {
@@ -126,15 +129,15 @@ struct Ast_Unary_Expression : public Ast_Expression {
     Ast_Unary_Expression() { type = AST_UNARY_EXPESSION; }
 
     int op = AST_UNARY_NONE;
-    Ast_Expression* expr;
-    Ast_Expression* nested_expr;
+    Ast_Expression* expr = nullptr;
+    Ast_Expression* nested_expr = nullptr;
 };
 
 struct Ast_Postfix_Expression : public Ast_Expression {
     int op = AST_UNARY_NONE;
 
-    Ast_Ident* id;
-    Ast_Expression* expr;    
+    Ast_Ident* id = nullptr;
+    Ast_Expression* expr = nullptr;    
 };
 
 enum {
@@ -175,18 +178,20 @@ struct Ast_Statement : public Ast {
 };
 
 enum {
-    AST_CONDITION_IF,
-    AST_CONDITION_ELSE,
-    AST_CONDITION_ELIF
+    AST_CONTROL_NONE,
+    AST_CONTROL_IF,
+    AST_CONTROL_ELSE,
+    AST_CONTROL_ELIF,
+    AST_CONTROL_WHILE
 };
 
-struct Ast_Conditional : public Ast {
-    Ast_Conditional() { type = AST_CONDITION; }
+struct Ast_ControlFlow : public Ast {
+    Ast_ControlFlow() { type = AST_CONDITION; }
 
     Ast_Expression* condition;
     Ast_Scope scope;
-    int flag = AST_CONDITION_IF;
-    Ast_Conditional* next;
+    int flag = AST_CONTROL_NONE;
+    Ast_ControlFlow* next;
 };
 
 struct Ast_Translation_Unit : public Ast {
@@ -220,6 +225,9 @@ struct Parser {
     Ast_Expression* parse_primary_expression();
     Ast_Function_Definition* parse_function_definition();
     Ast_Function_Call* parse_function_call();
+
+    Ast_Expression* parse_postfix_symbol();
+
     void parse_scope(Ast_Scope* scope);
 
     void add_identifier_to_scope(Ast_Decleration* dec);

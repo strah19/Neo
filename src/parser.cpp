@@ -43,6 +43,26 @@ void Parser::match(int type) {
     next();
 }
 
+Ast_Expression* Parser::parse_postfix_symbol() {
+    auto postfix = AST_NEW(Ast_Postfix_Expression);
+    switch (peek()->type) {
+    case Tok::T_INC:
+        match(Tok::T_INC);
+        postfix->op = AST_UNARY_INC;
+        break;
+    case Tok::T_DEC:
+        match(Tok::T_DEC);
+        postfix->op = AST_UNARY_DEC;
+        break;
+    default:
+        AST_DELETE(postfix);
+        postfix = nullptr;
+        break;
+    }
+
+    return postfix;
+}
+
 Ast_Expression* Parser::parse_primary_expression() {
     auto prime = AST_NEW(Ast_Primary_Expression);
 
@@ -70,23 +90,7 @@ Ast_Expression* Parser::parse_primary_expression() {
 Ast_Expression* Parser::parse_posfix_expression() {
     auto prime = static_cast<Ast_Primary_Expression*>(parse_primary_expression());
     if (prime) {
-        auto postfix = AST_NEW(Ast_Postfix_Expression);
-        switch (peek()->type) {
-        case Tok::T_INC:
-            match(Tok::T_INC);
-            postfix->op = AST_UNARY_INC;
-            prime->expr = postfix;
-            break;
-        case Tok::T_DEC:
-            match(Tok::T_DEC);
-            postfix->op = AST_UNARY_DEC;
-            prime->expr = postfix;
-            break;
-        default:
-            prime->expr = nullptr;
-            AST_DELETE(postfix);
-            break;
-        }
+        prime->expr = parse_postfix_symbol();
     }
     return prime;
 }
@@ -148,6 +152,9 @@ Ast_Expression* Parser::parse_expression() {
     case Tok::T_COMPARE_EQUAL:
         expr->op = AST_OPERATOR_COMPARITIVE_EQUAL;
         break;
+    case Tok::T_NOT_EQUAL:
+        expr->op = AST_OPERATOR_COMPARITIVE_NOT_EQUAL;
+        break;
     default:
         AST_DELETE(expr);
         return lexpr;
@@ -207,29 +214,40 @@ Ast* Parser::parse_statement() {
     }
     case Tok::T_IF: {
         match(Tok::T_IF);
-        auto condition = AST_NEW(Ast_Conditional);
+        auto condition = AST_NEW(Ast_ControlFlow);
         condition->condition = parse_expression();
+        condition->flag = AST_CONTROL_IF;
         parse_scope(&condition->scope);
 
         auto parent = condition;
         while (peek()->type == Tok::T_ELIF || peek()->type == Tok::T_ELSE) {
-            parent->next = AST_NEW(Ast_Conditional);
+            parent->next = AST_NEW(Ast_ControlFlow);
             parent = parent->next;
 
             if (peek()->type == Tok::T_ELIF) {
                 match(Tok::T_ELIF);
-                parent->flag = AST_CONDITION_ELIF;
+                parent->flag = AST_CONTROL_ELIF;
                 parent->condition = parse_expression();
             }
             else {
                 match(Tok::T_ELSE);
-                parent->flag = AST_CONDITION_ELSE;
+                parent->flag = AST_CONTROL_ELSE;
             }
 
             parse_scope(&parent->scope);
         }
 
         return condition;
+    }
+    case Tok::T_WHILE: {
+        auto it = AST_NEW(Ast_ControlFlow);
+        it->flag = AST_CONTROL_WHILE;
+
+        match(Tok::T_WHILE);
+        it->condition = parse_expression();
+        parse_scope(&it->scope);
+
+        return it;
     }
     default:
         return parse_decleration();
@@ -321,20 +339,31 @@ Ast_Decleration* Parser::parse_decleration() {
 
     auto dec = AST_NEW(Ast_Decleration);
 
-    dec->id = parse_identity();
-    dec->type_info = nullptr;
+    //Declerations
+    if (peek()->type == Tok::T_IDENTIFIER && peek_off(1)->type == Tok::T_COLON) {
+        dec->id = parse_identity();
 
-    if (peek()->type == Tok::T_COLON) {
         match(Tok::T_COLON);
 
         dec->type_info = parse_type();
-    }
 
-    if (peek()->type == Tok::T_EQUAL) {
-        if (!dec->type_info) 
-            dec->type = AST_ASSIGNMENT;
-        match(Tok::T_EQUAL);
+        Ast_Expression** expr = &dec->expr;
+        while (peek()->type == Tok::T_EQUAL) {
+            match(Tok::T_EQUAL);
+            *expr = parse_expression();
+            expr = &(*expr)->next;
+        }
+    }
+    else {
+        dec->type = AST_ASSIGNMENT;
+
         dec->expr = parse_expression();
+        Ast_Expression** expr = &dec->expr->next;
+        while (peek()->type == Tok::T_EQUAL) {
+            match(Tok::T_EQUAL);
+            *expr = parse_expression();
+            expr = &(*expr)->next;
+        }
     }
 
     match(Tok::T_SEMI);
@@ -344,8 +373,12 @@ Ast_Decleration* Parser::parse_decleration() {
 }
 
 void Parser::add_identifier_to_scope(Ast_Decleration* dec) {
+    if (!dec->id)
+        return;
+
     Entry* e = nullptr;
     auto c = current_scope;
+        
     while (c) {
         e = c->table.look_up(dec->id->name);
 

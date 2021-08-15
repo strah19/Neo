@@ -125,6 +125,10 @@ void C_Converter::convert_binary_expression(Ast_Expression* expr) {
             break;
         case AST_OPERATOR_COMPARITIVE_EQUAL:
             fprintf(file, "==");
+            break;
+        case AST_OPERATOR_COMPARITIVE_NOT_EQUAL:
+            fprintf(file, "!=");
+            break;
         }
 
         convert_expression(bin->right);
@@ -170,37 +174,52 @@ void C_Converter::convert_statement(Ast* ast) {
         break;
     }
     case AST_CONDITION: {
-        auto condition = static_cast<Ast_Conditional*>(ast);
+        auto condition = static_cast<Ast_ControlFlow*>(ast);
+        switch (condition->flag) {
+        case AST_CONTROL_IF: {
+            fprintf(file, "if(");
+            convert_expression(condition->condition);
+            fprintf(file, "){\n");
 
-        fprintf(file, "if(");
-        convert_expression(condition->condition);
-        fprintf(file, "){\n");
-
-        for(int i = 0; i < condition->scope.size; i++) {
-            convert_statement(condition->scope.statements[i]);
-        }
-
-        fprintf(file, "}\n");
-
-        auto current = condition->next;
-        while (current) {
-            if (current->flag == AST_CONDITION_ELIF) {
-                fprintf(file, "else if(");
-                convert_expression(current->condition);
-                fprintf(file, "){\n");
-            }
-            else if(current->flag == AST_CONDITION_ELSE) 
-                fprintf(file, "else{\n");
-
-            for(int i = 0; i < current->scope.size; i++) {
+            for(int i = 0; i < condition->scope.size; i++) {
                 convert_statement(condition->scope.statements[i]);
             }
 
             fprintf(file, "}\n");
 
-            current = current->next;
-        }
+            auto current = condition->next;
+            while (current) {
+                if (current->flag == AST_CONTROL_ELIF) {
+                    fprintf(file, "else if(");
+                    convert_expression(current->condition);
+                    fprintf(file, "){\n");
+                }
+                else if(current->flag == AST_CONTROL_ELSE) 
+                    fprintf(file, "else{\n");
 
+                for(int i = 0; i < current->scope.size; i++) {
+                    convert_statement(condition->scope.statements[i]);
+            }
+
+            fprintf(file, "}\n");
+
+            current = current->next;
+            }
+            break;
+        }
+        case AST_CONTROL_WHILE: {
+            fprintf(file, "while(");
+            convert_expression(condition->condition);
+            fprintf(file, "){\n");
+
+            for(int i = 0; i < condition->scope.size; i++) {
+                convert_statement(condition->scope.statements[i]);
+            }
+
+            fprintf(file, "}\n");
+            break;
+        }
+        }
         break;
     }
     default: {
@@ -247,14 +266,25 @@ void C_Converter::convert_function_call(Ast_Function_Call* call) {
 }
 
 void C_Converter::convert_decleration(Ast_Decleration* decleration) {
-    if (decleration->type == AST_DECLERATION || decleration->type == AST_ASSIGNMENT) {
-        if (decleration->type_info)
-            convert_type(decleration->type_info);
+    if (decleration->type == AST_DECLERATION) {
+        convert_type(decleration->type_info);
         convert_identifier(decleration->id);
 
-        if (decleration->expr) {
+        Ast_Expression** expr = &decleration->expr;
+        while (*expr) {
             fprintf(file, "=");
-            convert_expression(decleration->expr);
+            convert_expression(*expr);
+            expr = &(*expr)->next;
+        }
+        end();
+    }
+    else if (decleration->type == AST_ASSIGNMENT) {
+        convert_expression(decleration->expr);
+        Ast_Expression** expr = &decleration->expr->next;
+        while (*expr) {
+            fprintf(file, "=");
+            convert_expression(*expr);
+            expr = &(*expr)->next;
         }
         end();
     }
