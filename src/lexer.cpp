@@ -65,7 +65,9 @@ Lexer* Lexer::init(uint8_t* stream) {
     keywords.insert("byte", Tok::T_BYTE);
     keywords.insert("double", Tok::T_DOUBLE);
     keywords.insert("float", Tok::T_FLOAT);
+    keywords.insert("foreign", Tok::T_FOREIGN);
     keywords.insert("return", Tok::T_RETURN);
+    keywords.insert("from", Tok::T_FROM);
 
     symbols.insert(":=", Tok::T_COLON_ASSIGN);
     symbols.insert("<=", Tok::T_LTE);
@@ -144,10 +146,9 @@ void create_numeric_token(Lexer* lexer, int type, const char* int_const) {
     lexer->size++;
 }
 
-void create_char_const_token(Lexer* lexer, int type, char char_const) {
-    Token t = fill_token(type, lexer->current_pos, lexer->current_line);
-    t.char_const = char_const;
-    printf("%c\n", t.char_const);
+void create_char_const_token(Lexer* lexer) {
+    Token t = fill_token(Tok::T_CHAR_CONST, lexer->current_pos, lexer->current_line);
+    t.char_const = *lexer->stream;
 
     check_for_overflow(lexer);
     lexer->tokens[lexer->size] = t;
@@ -215,19 +216,6 @@ void multi_line_comment(Lexer* lexer, int* type, int* nested) {
     }
 }
 
-bool check_char_const(Lexer* lexer) {
-    if (*lexer->stream == '\'') {
-        lexer->stream++;
-
-        create_char_const_token(lexer, Tok::T_CHAR_CONST, *lexer->stream);
-        lexer->stream++;
-        lexer->stream++;
-        lexer->current_pos += 3;
-        return true;
-    }
-    return false;
-}
-
 void Lexer::run() {
     int type = 0;
     int nested = 0;
@@ -259,14 +247,18 @@ void Lexer::run() {
             }
 
             if (!is_special_character(*stream)) {
-                if (check_char_const(this))
-                    continue;
-
                 current[current_len++] = *stream;
                 if (current_len == 1) {
                     type = get_type_of_token(*stream);
 
-                    if (type == SYMBOL) {
+                    if (*stream == '\'') {
+                        stream++;
+                        create_char_const_token(this);
+                        stream++;
+                        current_pos += 2;
+                        reset(&type, this);
+                    }
+                    else if (type == SYMBOL) {
                         backtrack_symbol_position = stream;
                     }
                 }

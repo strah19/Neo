@@ -5,9 +5,9 @@
 
 #include <stdio.h>
 
-FILE* open_c_file(const char* file_name, char* buf);
+FILE* open_c_file(const char* file_name, char* buf, SymTable* extra_headers);
 
-void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root);
+void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root, SymTable* extra_headers);
 
 void compile_and_link(const char* file_name, const char* obj_name);
 

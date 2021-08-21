@@ -5,9 +5,11 @@
 #define C_OUT_FILE_MODE "w"
 #define C_OUT_FILE_TYPE ".c"
 
-const char* C_preamble_buffer = 
+const char* C_include_preamble_buffer = 
 "#include <stdio.h>\n"
-"#include <stdint.h>\n\n"
+"#include <stdint.h>\n\n";
+
+const char* C_typedef_preamble_buffer = 
 "typedef uint32_t u32;\n"
 "typedef int32_t i32;\n"
 "typedef float f32;\n"
@@ -22,7 +24,7 @@ const char* C_postamble_buffer =
 Ast_Function_Call* run_directives[64];
 size_t run_directives_size = 0;
 
-FILE* open_c_file(const char* file_name, char* buf) {    
+FILE* open_c_file(const char* file_name, char* buf, SymTable* extra_headers) {    
     memset(buf, 0, FILE_NAME_LEN);
     strcpy(buf, file_name);
 
@@ -32,7 +34,15 @@ FILE* open_c_file(const char* file_name, char* buf) {
     if (!file) 
         fatal_error("could not open %s for converting.\n", buf);
 
-    fprintf(file, C_preamble_buffer);
+    fprintf(file, C_include_preamble_buffer);
+
+    for (int i = 0; i < extra_headers->table.top(); i++) {
+        fprintf(file, "#include <%s.h>\n", extra_headers->table.get(i).name);
+    }
+
+    fprintf(file, "\n");
+
+    fprintf(file, C_typedef_preamble_buffer);
 
     return file;
 }
@@ -50,6 +60,9 @@ void C_Converter::convert_postfix_expression(Ast_Expression* expr) {
             break;
         case AST_ID_P:
             fprintf(file, "%s", p->ident->name);
+            break;
+        case AST_CALL_P:
+            convert_function_call(p->call);
             break;
         case AST_CHAR_P:
             fprintf(file, "'%c'", p->char_const);
@@ -229,30 +242,32 @@ void C_Converter::convert_statement(Ast* ast) {
 }
 
 void C_Converter::convert_function_definition(Ast_Function_Definition* func) {
-    if (!func->type_info)
-        fprintf(file, "void ");
-    else {
-        convert_type(func->type_info);
+    if (func->from == nullptr) {
+        if (!func->type_info)
+            fprintf(file, "void ");
+        else {
+            convert_type(func->type_info);
+        }
+        
+        convert_identifier(func->id);
+
+        fprintf(file, "(");
+        for(int i = 0; i < func->arg_count; i++) {
+            convert_type(func->args[i]->type_info);
+            convert_identifier(func->args[i]->id);
+
+            if (i < func->arg_count - 1)
+                fprintf(file, ",");
+        }
+        fprintf(file, ") ");
+        fprintf(file, "{\n");
+
+        for(int i = 0; i < func->scope.size; i++) {
+            convert_statement(func->scope.statements[i]);
+        }
+
+        fprintf(file, "}\n");
     }
-    
-    convert_identifier(func->id);
-
-    fprintf(file, "(");
-    for(int i = 0; i < func->arg_count; i++) {
-        convert_type(func->args[i]->type_info);
-        convert_identifier(func->args[i]->id);
-
-        if (i < func->arg_count - 1)
-            fprintf(file, ",");
-    }
-    fprintf(file, ") ");
-    fprintf(file, "{\n");
-
-    for(int i = 0; i < func->scope.size; i++) {
-        convert_statement(func->scope.statements[i]);
-    }
-
-    fprintf(file, "}\n");
 }
 
 void C_Converter::convert_function_call(Ast_Function_Call* call) {
@@ -262,7 +277,7 @@ void C_Converter::convert_function_call(Ast_Function_Call* call) {
             if (j < call->arg_count - 1)
                 fprintf(file, ",");
         }
-    fprintf(file, ");\n");
+    fprintf(file, ")");
 }
 
 void C_Converter::convert_decleration(Ast_Decleration* decleration) {
@@ -294,15 +309,17 @@ void C_Converter::convert_decleration(Ast_Decleration* decleration) {
         auto call = static_cast<Ast_Function_Call*>(decleration);
         if (call->run_in_directive)
             run_directives[run_directives_size++] = call;
-        else
+        else {
             convert_function_call(call);
+            end();
+        }
     }
 }
 
-void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root) {
+void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root, SymTable* extra_headers) {
     C_Converter c;
     char buf[FILE_NAME_LEN];
-    c.file = open_c_file(obj_name, buf);
+    c.file = open_c_file(obj_name, buf, extra_headers);
 
     for(int i = 0; i < root->scope.size; i++) {
         c.convert_decleration(static_cast<Ast_Decleration*>(root->scope.statements[i]));
@@ -312,6 +329,7 @@ void convert_transition_unit(const char* obj_name, Ast_Translation_Unit* root) {
 
     for (int i = 0; i < run_directives_size; i++) {
         c.convert_function_call(run_directives[i]);
+        c.end();
     }
 
     fprintf(c.file, "\treturn 0;\n}");

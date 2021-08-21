@@ -49,6 +49,8 @@ namespace Tok {
             T_COMPARE_EQUAL,
             T_LTE,
             T_GTE,
+            T_FOREIGN,
+            T_FROM,
             T_NOT_EQUAL,
             
             T_CONST,

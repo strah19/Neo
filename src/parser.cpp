@@ -63,6 +63,7 @@ Ast_Expression* Parser::parse_postfix_symbol() {
     return postfix;
 }
 
+
 Ast_Expression* Parser::parse_primary_expression() {
     auto prime = AST_NEW(Ast_Primary_Expression);
 
@@ -73,8 +74,14 @@ Ast_Expression* Parser::parse_primary_expression() {
         match(Tok::T_INT_CONST);     
         break;
     case Tok::T_IDENTIFIER:
-        prime->v_type = AST_ID_P;
-        prime->ident = parse_identity();
+        if (peek_off(1)->type == Tok::T_LPAR) {
+            prime->v_type = AST_CALL_P;
+            prime->call = parse_function_call();
+        }
+        else {
+            prime->v_type = AST_ID_P;
+            prime->ident = parse_identity();
+        }
         break;
     case Tok::T_CHAR_CONST:
         prime->v_type = AST_CHAR_P;
@@ -271,7 +278,7 @@ void Parser::parse_scope(Ast_Scope* scope) {
     current_scope = scope->parent;    
 }
 
-Ast_Function_Definition* Parser::parse_function_definition() {
+Ast_Function_Definition* Parser::parse_function_decleration() {
     auto func = AST_NEW(Ast_Function_Definition);
     func->id = parse_identity();
     add_identifier_to_scope(func);
@@ -298,7 +305,13 @@ Ast_Function_Definition* Parser::parse_function_definition() {
         match(Tok::T_DASH_ARROW);
 
         func->type_info = parse_type();
-    }
+    }   
+
+    return func;    
+}
+
+Ast_Function_Definition* Parser::parse_function_definition() {
+    auto func = parse_function_decleration();
 
     if (peek()->type == Tok::T_LCURLY) 
         parse_scope(&func->scope);
@@ -307,6 +320,12 @@ Ast_Function_Definition* Parser::parse_function_definition() {
 }
 
 Ast_Function_Call* Parser::parse_function_call() {
+    auto e = root->scope.table.look_up(peek()->identifier);
+
+    if (!e) {
+        report_error("undefined methods '%s' on line %d.\n", peek()->identifier, peek()->line);
+    }
+
     auto call = AST_NEW(Ast_Function_Call);
     call->id = parse_identity();
 
@@ -324,7 +343,6 @@ Ast_Function_Call* Parser::parse_function_call() {
     }
 
     match(Tok::T_RPAR);
-    match(Tok::T_SEMI);
 
     return call;
 }
@@ -334,7 +352,9 @@ Ast_Decleration* Parser::parse_decleration() {
         return parse_function_definition();
     }
     else if (peek_off(1)->type == Tok::T_LPAR) {
-        return parse_function_call();
+        auto call = parse_function_call();
+        match(Tok::T_SEMI);
+        return call;
     }
 
     auto dec = AST_NEW(Ast_Decleration);
@@ -353,6 +373,24 @@ Ast_Decleration* Parser::parse_decleration() {
             *expr = parse_expression();
             expr = &(*expr)->next;
         }
+    }
+    else if(peek()->type == Tok::T_POUND && peek_off(1)->type == Tok::T_FOREIGN) {
+        match(Tok::T_POUND);
+        match(Tok::T_FOREIGN);
+        match(Tok::T_FROM);
+        match(Tok::T_LPAR);
+
+        auto def = AST_NEW(Ast_Function_Definition);
+        auto from = parse_identity();
+        match(Tok::T_COMMA);
+        def = parse_function_decleration();
+        def->from = from;
+        match(Tok::T_RPAR);
+        match(Tok::T_SEMI);
+
+        extra_headers.insert(def->from->name, 0);
+
+        return def;
     }
     else {
         dec->type = AST_ASSIGNMENT;

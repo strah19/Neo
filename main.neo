@@ -1,9 +1,12 @@
-begin : () {
-    a : int = 2;
-    b : int = 3;
-    c : int = 4;
+#foreign from(ctype, isdigit : (character: int) -> int); 
+#foreign from(ctype, isalpha : (character: int) -> int); 
 
-    c = b = a;
+true : int = 1;
+false : int = 0;
+
+begin : () {
+    i : int = isdigit('1');
+    j : int = isalpha('c');
 }
 
 begin();

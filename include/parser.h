@@ -31,6 +31,7 @@ struct Ast_Expression;
 struct Ast_Ident;
 struct Ast_Decleration;
 struct Ast_Function_Definition;
+struct Ast_Function_Call;
 
 struct Ast_Scope : public Ast {
     Ast_Scope() { type = AST_SCOPE; }
@@ -98,7 +99,8 @@ enum {
     AST_FLOAT_P,
     AST_STR_P,
     AST_CHAR_P,
-    AST_ID_P
+    AST_ID_P,
+    AST_CALL_P
 };
 
 struct Ast_Primary_Expression : public Ast_Expression {
@@ -111,6 +113,7 @@ struct Ast_Primary_Expression : public Ast_Expression {
         char* string_literal;
         char char_const;
         Ast_Ident *ident;
+        Ast_Function_Call* call;
     };
 
     Ast_Expression* expr = nullptr;
@@ -153,6 +156,7 @@ struct Ast_Function_Definition : public Ast_Decleration {
     Ast_Decleration* args[64];
     size_t arg_count = 0;
     int flags = AST_FUNCTION_GLOBAL;
+    Ast_Ident* from = nullptr;
 };
 
 struct Ast_Function_Call : public Ast_Decleration {
@@ -202,6 +206,8 @@ struct Parser {
     static Parser* init(Lexer* lexer);
     void run();
 
+    SymTable extra_headers;
+
     Ast_Translation_Unit* root;
     Ast_Scope* current_scope;
 
@@ -225,6 +231,8 @@ struct Parser {
     Ast_Expression* parse_primary_expression();
     Ast_Function_Definition* parse_function_definition();
     Ast_Function_Call* parse_function_call();
+
+    Ast_Function_Definition* parse_function_decleration();
 
     Ast_Expression* parse_postfix_symbol();
 

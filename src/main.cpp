@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 
     begin_debug_benchmark();
     if (parser->error_count == 0)
-        convert_transition_unit(argv[2], parser->root);
+        convert_transition_unit(argv[2], parser->root, &parser->extra_headers);
     else 
         fatal_error("compilation ended with %d error%s.\n", parser->error_count, (parser->error_count == 1) ? "" : "s");
     end_debug_benchmark("backend");
