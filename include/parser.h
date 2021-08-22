@@ -178,7 +178,7 @@ struct Ast_Statement : public Ast {
 
     int flags = AST_ATTRIB_NONE;
 
-    Ast_Expression* expr;
+    Ast_Expression* expr = nullptr;
 };
 
 enum {

@@ -1,12 +1,15 @@
-#foreign from(ctype, isdigit : (character: int) -> int); 
-#foreign from(ctype, isalpha : (character: int) -> int); 
+__fib__ : (depth: int, current_depth: int) {
+   if depth == current_depth {
+       return;
+   }
+}
 
-true : int = 1;
-false : int = 0;
+fib : (depth: int) {
+    __fib__(depth, 0);
+}
 
 begin : () {
-    i : int = isdigit('1');
-    j : int = isalpha('c');
+    fib(10);
 }
 
 begin();

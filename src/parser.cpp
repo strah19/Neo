@@ -215,8 +215,13 @@ Ast* Parser::parse_statement() {
         match(Tok::T_RETURN);
         auto stmt = AST_NEW(Ast_Statement);
         stmt->flags |= AST_RETURN;
-        stmt->expr = parse_expression();
-        match(Tok::T_SEMI);
+        if (peek()->type == Tok::T_SEMI)
+            match(Tok::T_SEMI);
+        else {
+            stmt->expr = parse_expression();
+            match(Tok::T_SEMI);
+        }
+
         return stmt;
     }
     case Tok::T_IF: {
@@ -287,7 +292,8 @@ Ast_Function_Definition* Parser::parse_function_decleration() {
     match(Tok::T_LPAR);
     while(peek()->type != Tok::T_RPAR) {
         auto dec = AST_NEW(Ast_Decleration);
-
+        
+        func->scope.table.insert(peek()->identifier, Tok::T_IDENTIFIER);
         dec->id = parse_identity();
         match(Tok::T_COLON);
         dec->type_info = parse_type();
@@ -388,7 +394,7 @@ Ast_Decleration* Parser::parse_decleration() {
         match(Tok::T_RPAR);
         match(Tok::T_SEMI);
 
-        extra_headers.insert(def->from->name, 0);
+        extra_headers.insert(def->from->name, Tok::T_IDENTIFIER);
 
         return def;
     }

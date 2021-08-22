@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include <ctype.h>
 
 typedef uint32_t u32;
 typedef int32_t i32;
@@ -10,11 +9,16 @@ typedef double f64;
 typedef uint64_t u64;
 typedef int64_t i64;
 
-i32 true=1;
-i32 false=0;
+void __fib__(i32 depth,i32 current_depth) {
+if(depth==current_depth){
+return ;
+}
+}
+void fib(i32 depth) {
+__fib__(depth,0);
+}
 void begin() {
-i32 i=isdigit('1');
-i32 j=isalpha('c');
+fib(10);
 }
 
 int main(int argc, char *argv[]) {

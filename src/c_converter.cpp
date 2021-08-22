@@ -178,7 +178,8 @@ void C_Converter::convert_statement(Ast* ast) {
         switch (stmt->flags) {
         case AST_RETURN: {
             fprintf(file, "return ");
-            convert_expression(stmt->expr);
+            if (stmt->expr)
+                convert_expression(stmt->expr);
             fprintf(file, ";\n");
             break;
         }
