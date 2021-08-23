@@ -162,6 +162,18 @@ Ast_Expression* Parser::parse_expression() {
     case Tok::T_NOT_EQUAL:
         expr->op = AST_OPERATOR_COMPARITIVE_NOT_EQUAL;
         break;
+    case Tok::T_LTE:
+        expr->op = AST_OPERATOR_LTE;
+        break;
+    case Tok::T_GTE:
+        expr->op = AST_OPERATOR_GTE;
+        break;
+    case Tok::T_LARROW:
+        expr->op = AST_OPERATOR_LT;
+        break;
+    case Tok::T_RARROW:
+        expr->op = AST_OPERATOR_GT;
+        break;
     default:
         AST_DELETE(expr);
         return lexpr;

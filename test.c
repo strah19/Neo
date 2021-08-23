@@ -9,16 +9,19 @@ typedef double f64;
 typedef uint64_t u64;
 typedef int64_t i64;
 
-void __fib__(i32 depth,i32 current_depth) {
-if(depth==current_depth){
-return ;
+i32 fib(i32 depth) {
+if(depth<=1){
+return depth;
 }
-}
-void fib(i32 depth) {
-__fib__(depth,0);
+return fib(depth-1)+fib(depth-2);
 }
 void begin() {
 fib(10);
+char c='a';
+char d='a';
+if(c==d){
+c=d='b';
+}
 }
 
 int main(int argc, char *argv[]) {

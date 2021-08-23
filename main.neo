@@ -1,15 +1,19 @@
-__fib__ : (depth: int, current_depth: int) {
-   if depth == current_depth {
-       return;
-   }
-}
-
-fib : (depth: int) {
-    __fib__(depth, 0);
+fib : (depth: int) -> int {
+    if depth <= 1 {
+        return depth;
+    }
+    return fib(depth - 1) + fib(depth - 2);
 }
 
 begin : () {
     fib(10);
+
+    c : byte = 'a';
+    d : byte = 'a';
+
+    if c == d {
+        c = d = 'b';
+    }
 }
 
 begin();

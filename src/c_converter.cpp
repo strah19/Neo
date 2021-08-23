@@ -142,6 +142,18 @@ void C_Converter::convert_binary_expression(Ast_Expression* expr) {
         case AST_OPERATOR_COMPARITIVE_NOT_EQUAL:
             fprintf(file, "!=");
             break;
+        case AST_OPERATOR_LTE:
+            fprintf(file, "<=");
+            break;
+        case AST_OPERATOR_GTE:
+            fprintf(file, ">=");
+            break;
+        case AST_OPERATOR_LT:
+            fprintf(file, "<");
+            break;
+        case AST_OPERATOR_GT:
+            fprintf(file, ">");
+            break;
         }
 
         convert_expression(bin->right);
