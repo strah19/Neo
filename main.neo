@@ -1,3 +1,5 @@
+true : constant int = 0;
+
 fib : (depth: int) -> int {
     if depth <= 1 {
         return depth;

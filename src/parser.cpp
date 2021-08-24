@@ -194,10 +194,14 @@ Ast_Type* Parser::parse_type() {
         type_info->atom_type = AST_TYPE_INT;
         match(peek()->type);
         return type_info;
-        break;
     case Tok::T_BYTE:
         type_info->atom_type = AST_TYPE_BYTE;
         match(peek()->type);
+        return type_info;
+    case Tok::T_CONST:
+        match(Tok::T_CONST);
+        type_info = parse_type();
+        type_info->constant = true;
         return type_info;
     default:
         report_error("'%s' is not a valid type on line %d.\n", token_to_str(peek()), peek()->line);

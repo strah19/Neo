@@ -60,6 +60,7 @@ struct Ast_Type : public Ast {
     Ast_Type() { type = AST_TYPE; }
 
     int atom_type;
+    bool constant = false;
 };
 
 struct Ast_Decleration : public Ast {

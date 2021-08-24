@@ -172,6 +172,9 @@ void C_Converter::convert_identifier(Ast_Ident* id) {
 }
 
 void C_Converter::convert_type(Ast_Type* type) {
+    if (type->constant)
+        fprintf(file, "const ");
+
     switch (type->atom_type) {
     case AST_TYPE_INT:
         fprintf(file, "i32 ");

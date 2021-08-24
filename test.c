@@ -9,6 +9,7 @@ typedef double f64;
 typedef uint64_t u64;
 typedef int64_t i64;
 
+const i32 true=0;
 i32 fib(i32 depth) {
 if(depth<=1){
 return depth;

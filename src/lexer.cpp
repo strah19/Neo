@@ -59,7 +59,6 @@ Lexer* Lexer::init(uint8_t* stream) {
     keywords.insert("continue", Tok::T_CONTINUE);
     keywords.insert("return", Tok::T_RETURN);
     keywords.insert("break", Tok::T_BREAK);
-    keywords.insert("const", Tok::T_CONST);
     keywords.insert("int", Tok::T_INT);
     keywords.insert("boolean", Tok::T_BOOLEAN);
     keywords.insert("byte", Tok::T_BYTE);
@@ -68,6 +67,7 @@ Lexer* Lexer::init(uint8_t* stream) {
     keywords.insert("foreign", Tok::T_FOREIGN);
     keywords.insert("return", Tok::T_RETURN);
     keywords.insert("from", Tok::T_FROM);
+    keywords.insert("constant", Tok::T_CONST);
 
     symbols.insert(":=", Tok::T_COLON_ASSIGN);
     symbols.insert("<=", Tok::T_LTE);
